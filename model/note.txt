@@ -1,0 +1,5 @@
+Data that should be in here:
+
+GoogleNews-vectors-negative300.bin
+a file for word2vec word embeddings, obtainable from:
+https://code.google.com/archive/p/word2vec/
