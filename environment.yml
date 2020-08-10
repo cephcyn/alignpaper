@@ -162,6 +162,7 @@ dependencies:
   - tensorflow=2.2.0=mkl_py38h6d3daf0_0
   - tensorflow-base=2.2.0=mkl_py38h5059a2d_0
   - tensorflow-estimator=2.2.0=pyh95af2a2_0
+  - tensorflow-hub=0.8.0=pyh831f99a_0
   - termcolor=1.1.0=py_2
   - terminado=0.8.3=py38h32f6830_1
   - testpath=0.4.4=py_0
