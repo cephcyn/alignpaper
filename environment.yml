@@ -34,6 +34,7 @@ dependencies:
   - docutils=0.15.2=py38_0
   - entrypoints=0.3=py38h32f6830_1001
   - expat=2.2.9=he1b5a44_2
+  - fastcluster=1.1.26=py38hcb8c335_1
   - fontconfig=2.13.1=h86ecdb6_1001
   - freetype=2.10.2=he06d7ca_0
   - gast=0.3.3=py_0
