@@ -34,49 +34,67 @@ within_anchor_index:
 - the index of the search term within split_1 
 - For example, if the search term = "BERT", split_1 anchor term = "the model BERT", within_anchor_index would be 10
 
-averb: 
+d_averb: 
+- generated using dependency parsing
 - the verb that is most closely related to the anchor phrase 
 - (the "verb that the anchor phrase interacts with")
-averb_s: 
+d_averb_s: 
+- generated using dependency parsing
 - a list of all phrases that are marked as subjects of averb or on the left hand side of averb (this may be changed later)
-averb_o: 
+d_averb_o: 
+- generated using dependency parsing
 - a list of all phrases that are marked as objects of averb or on the right hand side of averb (this may be changed later)
-averb_relation: 
+d_averb_relation: 
+- generated using dependency parsing
 - the relationship between the anchor phrase and averb. 
 - +1 if the anchor phrase is on the subject side
 - -1 if the anchor is on the object side
 - 0 if they overlap somehow (this should be uncommon)
-averb_split:
+d_averb_split:
+- generated using dependency parsing
 - The split_n "column" that the averb is contained within 
 - so 0 if before anchor, 1 if in anchor, 2 if after
-averb_span0:
+d_averb_span0:
+- generated using dependency parsing
 - The beginning index of the averb in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
-averb_span1:
+d_averb_span1:
+- generated using dependency parsing
 - The ending index of the averb in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
-averb_cspan0:
+d_averb_cspan0:
+- generated using dependency parsing
 - The beginning index of the averb in the split_n "column" it is contained within
-averb_cspan1:
+d_averb_cspan1:
+- generated using dependency parsing
 - The ending index of the averb in the split_n "column" it is contained within
 
-root: 
+d_root: 
+- generated using dependency parsing
 - the root word of the sentence as identified by dependency tree parsing
-root_full: 
+d_root_full: 
+- generated using dependency parsing
 - if the root word is a verb, then the entire main verb phrase of the sentence
 - otherwise it's just the root word again
-root_s: 
+d_root_s: 
+- generated using dependency parsing
 - a list of all phrases that are marked as subjects of root_full or on the left hand side of root_full (this may be changed later)
-root_o: 
+d_root_o: 
+- generated using dependency parsing
 - same thing as root_s but objects or on the right hand side
-root_split:
+d_root_split:
+- generated using dependency parsing
 - The split_n "column" that the root is contained within 
 - so 0 if before anchor, 1 if in anchor, 2 if after
-root_span0:
+d_root_span0:
+- generated using dependency parsing
 - The beginning index of the root in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
-root_span1:
+d_root_span1:
+- generated using dependency parsing
 - The ending index of the root in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
-root_cspan0:
+d_root_cspan0:
+- generated using dependency parsing
 - The beginning index of the root in the split_n "column" it is contained within
-root_cspan1:
+d_root_cspan1:
+- generated using dependency parsing
 - The ending index of the root in the split_n "column" it is contained within
 
 fverb: 
@@ -85,7 +103,62 @@ fverb:
 fword: 
 - the first word that follows the anchor phrase, excluding things like punctuation.
 
-apos: 
+d_apos: 
+- generated using dependency parsing
 - a list that represents the part of speech of the anchor, followed by the parts of speech of "parent" words of the anchor phrase in ascending order
-apos_w: 
+d_apos_w: 
+- generated using dependency parsing
 - a list of the literal words associated with each of the parts of speech in apos, respectively
+
+c_senttype:
+- generated using constituency parsing
+- the sentence type (sentence, inverted, etc.)
+c_sentparts:
+- generated using constituency parsing
+- a list of high-level (1-deep) components of the sentence in order (e.g. [NP, VP, .])
+
+c_subj_full:
+- generated using constituency parsing
+- a string phrase that represents the subject of the sentence
+c_subj_split:
+- generated using constituency parsing
+- TODO
+c_subj_span0:
+- generated using constituency parsing
+- TODO
+c_subj_span1:
+- generated using constituency parsing
+- TODO
+c_subj_cspan0:
+- generated using constituency parsing
+- TODO
+c_subj_cspan1:
+- generated using constituency parsing
+- TODO
+
+c_verb_full:
+- generated using constituency parsing
+- TODO
+c_verb_split:
+- generated using constituency parsing
+- TODO
+c_verb_span0:
+- generated using constituency parsing
+- TODO
+c_verb_span1:
+- generated using constituency parsing
+- TODO
+c_verb_cspan0:
+- generated using constituency parsing
+- TODO
+c_verb_cspan1:
+- generated using constituency parsing
+- TODO
+
+c_subj_list:
+- generated using constituency parsing
+- TODO
+c_verb_list:
+- generated using constituency parsing
+- TODO
+
