@@ -122,43 +122,45 @@ c_subj_full:
 - a string phrase that represents the subject of the sentence
 c_subj_split:
 - generated using constituency parsing
-- TODO
+- The split_n "column" that the subj is contained within 
+- so 0 if before anchor, 1 if in anchor, 2 if after
 c_subj_span0:
 - generated using constituency parsing
-- TODO
+- The beginning index of the subj in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
 c_subj_span1:
 - generated using constituency parsing
-- TODO
+- The ending index of the subj in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
 c_subj_cspan0:
 - generated using constituency parsing
-- TODO
+- The beginning index of the subj in the split_n "column" it is contained within
 c_subj_cspan1:
 - generated using constituency parsing
-- TODO
+- The ending index of the subj in the split_n "column" it is contained within
 
 c_verb_full:
 - generated using constituency parsing
-- TODO
+- a string phrase that represents the main verb of the sentence
 c_verb_split:
 - generated using constituency parsing
-- TODO
+- The split_n "column" that the verb is contained within 
+- so 0 if before anchor, 1 if in anchor, 2 if after
 c_verb_span0:
 - generated using constituency parsing
-- TODO
+- The beginning index of the verb in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
 c_verb_span1:
 - generated using constituency parsing
-- TODO
+- The ending index of the verb in the string ' '.join(split_tokens) (should be equivalent to split_0+split_1+split_2)
 c_verb_cspan0:
 - generated using constituency parsing
-- TODO
+- The beginning index of the verb in the split_n "column" it is contained within
 c_verb_cspan1:
 - generated using constituency parsing
-- TODO
+- The ending index of the verb in the split_n "column" it is contained within
 
 c_subj_list:
 - generated using constituency parsing
-- TODO
+- an array of words that are related to or are subjects of the sentence
 c_verb_list:
 - generated using constituency parsing
-- TODO
+- an array of words that are related to or are major verbs of the sentence
 
