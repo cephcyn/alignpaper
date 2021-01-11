@@ -12,7 +12,9 @@ TODO elaborate?
 
 DataFrame with index=source text ID, columns titled txt0...txtN, and each cell is a tuple:
 
-> ```(text_of_cell, pos_of_entire_text, [list_of_pos_of_each_cell_word/token])```
+```
+(text_of_cell, pos_of_entire_text, [list_of_pos_of_each_cell_word/token])
+```
 
 TODO elaborate
 
@@ -21,6 +23,8 @@ TODO elaborate
 ### <a id="alignRowMajorLocal"></a>Text alignment (alignRowMajorLocal)
 
 An implementation of Smith-Waterman for text alignment, using a [modified version of Smith-Waterman scoring function](#alignRowMajorLocal_scoringFunction)
+
+TODO pseudocode
 
 Inputs:
 - align_a, align_b: [Alignment DataFrames](#formatAlignment) that we want to align together.
@@ -31,3 +35,31 @@ Inputs:
 #### <a id="alignRowMajorLocal_scoringFunction"></a>alignRowMajorLocal scoring function (S-W scoring)
 
 TODO elaborate
+
+### <a id="splitCol"></a>Alignment column splitting (splitCol)
+
+Split an alignment column using a word tree (either left-to-right or right-to-left)
+
+Pseudocode:
+
+```
+Build word trie: - not in-depth as this is relatively standard trie building
+  Initialize empty trie / prefix tree with an empty root node representing "phrase/list start"
+  For each phrase (list of tokens) in the column:
+    If performing right-to-left split, reverse the list of tokens
+    Add list of tokens to trie, where each trie node is a single token
+Collapse word trie:
+  (Outermost execution: Set current trie node to root node)
+  If current trie node has children:
+    Collapse each of the child nodes
+  If current trie node has exactly one child node:
+    Combine the text of the current trie node and child node (if left-to-right, append; otherwise prepend)
+    Assign each of the child node's children as the current trie node's children
+  Return collapsed trie (the trie with current node as root is now fully collapsed)
+Split into columns:
+  N = height/depth of the collapsed word trie
+  Create N new alignment table columns to replace the original column-to-be-split
+  For each phrase in the old column:
+    Get the list corresponding to tracing the phrase out in the collapsed word trie (if right-to-left, reverse the list)
+    Write list element X into column X (if right-to-left, write element X into column N-X)
+```
