@@ -1,2 +1,0 @@
-# multiple_alignment.ipynb
-
