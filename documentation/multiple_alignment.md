@@ -63,3 +63,19 @@ Split into columns:
     Get the list corresponding to tracing the phrase out in the collapsed word trie (if right-to-left, reverse the list)
     Write list element X into column X (if right-to-left, write element X into column N-X)
 ```
+
+### <a id="mergeCol"></a>Alignment column merging (mergeCol)
+
+Merge two alignment columns together.
+
+Pseudocode:
+
+```
+For each row in the columns:
+  Combine the raw text (append col2 to col1)
+  Combine the phrase POS (uses the phrase POS of text in col1 if there is one, otherwise uses phrase POS of col2)
+  Combine the list of token POSs (append col2 to col1)
+Remove the extra column
+```
+
+###
