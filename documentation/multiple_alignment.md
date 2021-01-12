@@ -38,7 +38,7 @@ TODO elaborate
 
 ### <a id="splitCol"></a>Alignment column splitting (splitCol)
 
-Split an alignment column using a word tree (either left-to-right or right-to-left)
+Split an [alignment column](#formatAlignment) using a word tree (either left-to-right or right-to-left)
 
 Pseudocode:
 
@@ -66,7 +66,7 @@ Split into columns:
 
 ### <a id="mergeCol"></a>Alignment column merging (mergeCol)
 
-Merge two alignment columns together.
+Merge two [alignment columns](#formatAlignment) together.
 
 Pseudocode:
 
@@ -78,4 +78,58 @@ For each row in the columns:
 Remove the extra column
 ```
 
-###
+### <a id="tempScoreVector"></a>Alignment scoring (tempScoreVector)
+
+TODO - I need to rename this and update documentation when I clean up this function.
+
+Calculates an overall score for a given [alignment table]((#formatAlignment). It does this by calculating a weighted sum of several sub-scores, each of which target different desired traits for a good text alignment.
+
+TODO: explain score-per-column weighting and overall sub-score weighting
+
+#### <a id="scoreNumColumns"></a>Score: number of columns (scoreNumColumns)
+
+TODO
+
+#### <a id="score_coltextcount"></a>Score: number of distinct phrases per column (score_coltextcount)
+
+TODO
+
+#### <a id="score_colptxtembed"></a>Score: phrase embedding variance per column (score_colptxtembed)
+
+TODO
+
+#### <a id="score_coltokncount"></a>Score: number of distinct tokens per column (score_coltokncount)
+
+TODO
+
+#### <a id="score_coltentcount"></a>Score: number of distinct entities per column (score_coltentcount)
+
+TODO
+
+#### <a id="score_colttuicount"></a>Score: number of distinct entity types per column (score_colttuicount)
+
+TODO
+
+#### <a id="score_colpposcount"></a>Score: number of distinct phrase POS per column (score_colpposcount)
+
+TODO
+
+#### <a id="score_coltposcount"></a>Score: number of distinct token POS per column (score_coltposcount)
+
+TODO
+
+#### <a id="score_colrepresent"></a>Score: number of rows that are represented per column (score_colrepresent)
+
+TODO
+
+#### <a id="scoreRowAlignment"></a>Score: [gap/mismatch score](alignRowMajorLocal_scoringFunction) between a target row and the alignment (scoreRowAlignment)
+
+TODO
+
+#### <a id="score_termcolcount"></a>Score: weighted sum of how frequently target terms are repeated per column (score_termcolcount)
+
+TODO
+
+#### <a id="scoreRowLayoutCount"></a>Score: number of distinct row layouts (sequence of phrase-filled/gap) present in an alignment (scoreRowLayoutCount)
+
+TODO
