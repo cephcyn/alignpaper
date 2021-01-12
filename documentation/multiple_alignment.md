@@ -122,7 +122,7 @@ TODO
 
 TODO
 
-#### <a id="scoreRowAlignment"></a>Score: [gap/mismatch score](alignRowMajorLocal_scoringFunction) between a target row and the alignment (scoreRowAlignment)
+#### <a id="scoreRowAlignment"></a>Score: [gap/mismatch score](#alignRowMajorLocal_scoringFunction) between a target row and the alignment (scoreRowAlignment)
 
 TODO
 
