@@ -94,7 +94,11 @@ TODO
 
 #### <a id=""></a>Weights: column weighting
 
-TODO
+For scores that are column-specific (can be calculated per-column and then somehow summed together to represent the entire alignment), we need a way to weight each column / judge how "relevant" each column is. There are multiple possible ways to do this:
+- num tokens (**this is the method I'm primarily using**): each column is weighted by the total number of tokens it contains (e.g. if a column contains 2 filled rows with 3 words each, then the total number of tokens is 6).
+- row representation: each column is weighted by the number of rows filled within it (e.g. if a column contains 2 filled rows, the row representation is 2)
+
+I've also experimented with adjusting both of these weighting schemes for distinct entity type or distinct entity TUI scoring so that columns that contain 0 identified entities are excluded from the weighting entirely. As of 2021/01/13, these adjusted schemes aren't used in the codebase at all.
 
 #### Score components
 
