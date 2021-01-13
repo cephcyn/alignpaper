@@ -16,7 +16,7 @@ DataFrame with index=source text ID, columns titled txt0...txtN, and each cell i
 (text_of_cell, pos_of_entire_text, [list_of_pos_of_each_cell_word/token])
 ```
 
-TODO elaborate
+TODO elaborate?
 
 ## Functions
 
@@ -35,6 +35,26 @@ Inputs:
 #### <a id="alignRowMajorLocal_scoringFunction"></a>alignRowMajorLocal scoring function (S-W scoring)
 
 TODO elaborate
+
+#### <a id="buildAlignmentBeamSearch"></a>How to get the ordering of when to add each row into the "full alignment" for alignRowMajorLocal?
+
+buildAlignmentBeamSearch: perform a beam search.
+
+Pseudocode:
+
+```
+initialize an empty beam
+seed with N=10 (by default) starting rows to try building the alignment from
+while all the elements in the beam don't contain all of the rows:
+  initialize an empty 'next' beam
+  for each of the elements/alignments in the beam:
+    try adding each of M=10 (by default) random columns that aren't already in the alignment onto the alignment; put the result in the 'next' beam
+  sort the 'next' beam by alignment score and filter out all but the top F=5 (by default) alignments
+  set beam = 'next' beam
+return the alignment (alignment ordering) of the first/best element/alignment in the beam
+```
+
+I'm not sure that this search actually works well, especially when the S/W align function isn't *too* great to start with... TODO, I want to test if this works better with the S-W alignment score or the full-alignment score. I feel like intuitively it would work better with the full-alignment score.
 
 ### <a id="tempScoreVector"></a>Alignment scoring (scoreAlignment)
 
@@ -144,7 +164,7 @@ The number of distinct row layouts / sequences of filled cells and gap cells in 
 
 ### <a id="alignment-search"></a>Alignment search
 
-TODO write up search algorithm itself
+Stochastic hill-climbing: either perform the operation that produces greatest full-alignment score increase, or randomly perform an operation.
 
 Operations that the search algorithm explores:
 - [Split a column on word tree level boundaries](splitCol)
