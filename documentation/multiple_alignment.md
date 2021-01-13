@@ -86,50 +86,80 @@ Calculates an overall score for a given [alignment table]((#formatAlignment). It
 
 TODO: explain score-per-column weighting and overall sub-score weighting
 
-#### <a id="scoreNumColumns"></a>Score: number of columns (scoreNumColumns)
+#### Weighting schemes
+
+#### <a id="weight_alignmentTerms"></a>Weights: term weighting
 
 TODO
 
-#### <a id="score_coltextcount"></a>Score: number of distinct phrases per column (score_coltextcount)
+#### <a id=""></a>Weights: column weighting
 
 TODO
 
-#### <a id="score_colptxtembed"></a>Score: phrase embedding variance per column (score_colptxtembed)
+#### Score components
 
-TODO
+##### <a id="scoreNumColumns"></a>Score: number of columns (scoreNumColumns)
 
-#### <a id="score_coltokncount"></a>Score: number of distinct tokens per column (score_coltokncount)
+Number of columns divided by the largest number of tokens present in any single given row.
+- Division is because the initial number of columns is determined in part by maximum token count (every single token occupies its own cell)
 
-TODO
+##### <a id="score_coltextcount"></a>Score: number of distinct phrases per column (score_coltextcount)
 
-#### <a id="score_coltentcount"></a>Score: number of distinct entities per column (score_coltentcount)
+The number of unique cells / texts / phrases in a given column.
 
-TODO
+##### <a id="score_colptxtembed"></a>Score: phrase embedding variance per column (score_colptxtembed)
 
-#### <a id="score_colttuicount"></a>Score: number of distinct entity types per column (score_colttuicount)
+The trace of the covariance matrix containing phrase embeddings for all of the phrases within a given column.
+- Trace(covariance(embeddings)) is because https://stats.stackexchange.com/questions/225434/a-measure-of-variance-from-the-covariance-matrix
+- The word embedding for a phrase is calculated as a sum of word2vec embeds (for tokens that have embeds)
+- If a column has no tokens that have valid word2vec embeds, then it returns 0.
 
-TODO
+##### <a id="score_coltokncount"></a>Score: number of distinct tokens per column (score_coltokncount)
 
-#### <a id="score_colpposcount"></a>Score: number of distinct phrase POS per column (score_colpposcount)
+The number of unique tokens / words in a given column.
 
-TODO
+<a id="score_coltoknvarcount"></a>
+Also can apply a variation count: the number of unique tokens / words in a given column that *don't appear in all of the rows*
 
-#### <a id="score_coltposcount"></a>Score: number of distinct token POS per column (score_coltposcount)
+##### <a id="score_coltentcount"></a>Score: number of distinct entities per column (score_coltentcount)
 
-TODO
+The number of unique entities in a given column.
 
-#### <a id="score_colrepresent"></a>Score: number of rows that are represented per column (score_colrepresent)
+<a id="score_coltentvarcount"></a>
+Also can apply a variation count: the number of unique entities in a given column that *don't appear in all of the rows*
 
-TODO
+##### <a id="score_colttuicount"></a>Score: number of distinct entity types per column (score_colttuicount)
 
-#### <a id="scoreRowAlignment"></a>Score: [gap/mismatch score](#alignRowMajorLocal_scoringFunction) between a target row and the alignment (scoreRowAlignment)
+The number of unique entity types in a given column. This is different from the unique entities because there are some entities that end up grouping into the same entity type: for example, "patient" and "outpatient" may be the same entity type but have unique entity IDs.
 
-TODO
+<a id="score_colttuivarcount"></a>
+Also can apply a variation count: the number of unique entity types in a given column that *don't appear in all of the rows*
 
-#### <a id="score_termcolcount"></a>Score: weighted sum of how frequently target terms are repeated per column (score_termcolcount)
+##### <a id="score_colpposcount"></a>Score: number of distinct phrase POS per column (score_colpposcount)
 
-TODO
+The number of unique phrase POSs (e.g. NP, VP) in a given column. (The phrase POS itself is determined by constituency parse and is often very variable for parse tree structure itself.)
 
-#### <a id="scoreRowLayoutCount"></a>Score: number of distinct row layouts (sequence of phrase-filled/gap) present in an alignment (scoreRowLayoutCount)
+##### <a id="score_coltposcount"></a>Score: number of distinct token POS per column (score_coltposcount)
 
-TODO
+The number of unique token POSs (e.g. NN, NNS, JJ, CD) in a given column. (The token POS is determined by constituency parse, which is relatively stable for token POS tagging.)
+
+<a id="score_coltposvarcount"></a>
+Also can apply a variation count: the number of unique token POSs in a given column that *don't appear in all of the rows*
+
+##### <a id="score_colrepresent"></a>Score: number of rows that are represented per column (score_colrepresent)
+
+The fraction of rows that are represented (have any cells with content in them) in a given column.
+
+##### <a id="scoreRowAlignment"></a>Score: [gap/mismatch score](#alignRowMajorLocal_scoringFunction) between a target row and the alignment (scoreRowAlignment)
+
+The [SW alignment score](#alignRowMajorLocal_scoringFunction) of an alignment between a given target row and the full alignment. This is intended to allow a user to specify a target row or pattern to match to, and provide additional emphasis on how well the alignment itself matches that.
+
+##### <a id="score_termcolcount"></a>Score: weighted sum of how frequently target terms are repeated per column (score_termcolcount)
+
+A score intended to discourage terms from being spread across a large number of columns in an alignment. It calculates the number of columns that a given term (or terms) is present in within the full alignment, then sums them together (equally by default, or otherwise with a given set of weights for all of the terms).
+
+I generally use this with a [term / token weighting scheme](weight_alignmentTerms)
+
+##### <a id="scoreRowLayoutCount"></a>Score: number of distinct row layouts (sequence of phrase-filled/gap) present in an alignment (scoreRowLayoutCount)
+
+The number of distinct row layouts / sequences of filled cells and gap cells in a full alignment.
