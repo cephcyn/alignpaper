@@ -90,7 +90,20 @@ TODO: explain score-per-column weighting and overall sub-score weighting
 
 #### <a id="weight_alignmentTerms"></a>Weights: term weighting
 
-TODO
+For scores that are term-specific (are calculated on a specific set of terms), we need a way to weight each term. Roughly, this weighting scheme collects all of the unique tokens in an alignment, removes stopwords, selects a group of POS tags that it especially cares about and squares the count of words that are most frequently tagged as those POSs. The final (adjusted) count is equal to either the number of rows a token appears in, or that number squared (if it's one of the 'priority' POS tags)
+
+The priority POS list by default: NN, (NNS, NNP), JJ, RB
+
+How I calculate these weights:
+
+```
+Collect list of tokens, POS per token
+Reduce list of tokens to a dict mapping token to how many rows it appears in
+Remove tokens that only appear in a single row
+Count how many times each POS is applied to each token
+Map each token to the POS it is most frequently tagged as
+Square the row counts of tokens that have POSs within a priority POS list
+```
 
 #### <a id=""></a>Weights: column weighting
 
