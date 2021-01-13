@@ -20,7 +20,7 @@ TODO elaborate
 
 ## Functions
 
-### <a id="alignRowMajorLocal"></a>Text alignment (alignRowMajorLocal)
+### <a id="alignRowMajorLocal"></a>Initial / "Full" text alignment (alignRowMajorLocal)
 
 An implementation of Smith-Waterman for text alignment, using a [modified version of Smith-Waterman scoring function](#alignRowMajorLocal_scoringFunction)
 
@@ -36,48 +36,6 @@ Inputs:
 
 TODO elaborate
 
-### <a id="splitCol"></a>Alignment column splitting (splitCol)
-
-Split an [alignment column](#formatAlignment) using a word tree (either left-to-right or right-to-left)
-
-Pseudocode:
-
-```
-Build word trie: - not in-depth as this is relatively standard trie building
-  Initialize empty trie / prefix tree with an empty root node representing "phrase/list start"
-  For each phrase (list of tokens) in the column:
-    If performing right-to-left split, reverse the list of tokens
-    Add list of tokens to trie, where each trie node is a single token
-Collapse word trie:
-  (Outermost execution: Set current trie node to root node)
-  If current trie node has children:
-    Collapse each of the child nodes
-  If current trie node has exactly one child node:
-    Combine the text of the current trie node and child node (if left-to-right, append; otherwise prepend)
-    Assign each of the child node's children as the current trie node's children
-  Return collapsed trie (the trie with current node as root is now fully collapsed)
-Split into columns:
-  N = height/depth of the collapsed word trie
-  Create N new alignment table columns to replace the original column-to-be-split
-  For each phrase in the old column:
-    Get the list corresponding to tracing the phrase out in the collapsed word trie, padding the tail end of the list with blank strings (if right-to-left, pad the head of the list)
-    Write list element X into column X
-```
-
-### <a id="mergeCol"></a>Alignment column merging (mergeCol)
-
-Merge two [alignment columns](#formatAlignment) together.
-
-Pseudocode:
-
-```
-For each row in the columns:
-  Combine the raw text (append col2 to col1)
-  Combine the phrase POS (uses the phrase POS of text in col1 if there is one, otherwise uses phrase POS of col2)
-  Combine the list of token POSs (append col2 to col1)
-Remove the extra column
-```
-
 ### <a id="tempScoreVector"></a>Alignment scoring (scoreAlignment)
 
 Calculates an overall score for a given [alignment table]((#formatAlignment). It does this by calculating a weighted sum of several sub-scores, each of which target different desired traits for a good text alignment.
@@ -85,7 +43,7 @@ Calculates an overall score for a given [alignment table]((#formatAlignment). It
 There are way more sub-score types than are actually used in the overall score.
 
 There are a few candidates for overall score weighting:
-- 1 * [(number of columns)](#score_numcolumns) + -1 * [(text embedding variance)](score_colptxtembed) (**TODO update? - this is the method I'm primarily using**)
+- 1 * [(number of columns)](#score_numcolumns) + -1 * [(text embedding variance)](score_colptxtembed) (**this is the method I'm primarily using**)
 - 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct tokens w/ variance)](score_coltoknvarcount)
 - 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct entity TUIs w/ variance)](score_colttuivarcount)
 
@@ -183,3 +141,53 @@ I generally use this with a [term / token weighting scheme](weight_alignmentTerm
 ##### <a id="scoreRowLayoutCount"></a>Score: number of distinct row layouts (sequence of phrase-filled/gap) present in an alignment (scoreRowLayoutCount)
 
 The number of distinct row layouts / sequences of filled cells and gap cells in a full alignment.
+
+### <a id="alignment-search"></a>Alignment search
+
+TODO write up search algorithm itself
+
+Operations that the search algorithm explores:
+- [Split a column on word tree level boundaries](splitCol)
+- [Merge two columns](mergeCol)
+
+#### <a id="splitCol"></a>Alignment column splitting (splitCol)
+
+Split an [alignment column](#formatAlignment) using a word tree (either left-to-right or right-to-left)
+
+Pseudocode:
+
+```
+Build word trie: - not in-depth as this is relatively standard trie building
+  Initialize empty trie / prefix tree with an empty root node representing "phrase/list start"
+  For each phrase (list of tokens) in the column:
+    If performing right-to-left split, reverse the list of tokens
+    Add list of tokens to trie, where each trie node is a single token
+Collapse word trie:
+  (Outermost execution: Set current trie node to root node)
+  If current trie node has children:
+    Collapse each of the child nodes
+  If current trie node has exactly one child node:
+    Combine the text of the current trie node and child node (if left-to-right, append; otherwise prepend)
+    Assign each of the child node's children as the current trie node's children
+  Return collapsed trie (the trie with current node as root is now fully collapsed)
+Split into columns:
+  N = height/depth of the collapsed word trie
+  Create N new alignment table columns to replace the original column-to-be-split
+  For each phrase in the old column:
+    Get the list corresponding to tracing the phrase out in the collapsed word trie, padding the tail end of the list with blank strings (if right-to-left, pad the head of the list)
+    Write list element X into column X
+```
+
+#### <a id="mergeCol"></a>Alignment column merging (mergeCol)
+
+Merge two [alignment columns](#formatAlignment) together.
+
+Pseudocode:
+
+```
+For each row in the columns:
+  Combine the raw text (append col2 to col1)
+  Combine the phrase POS (uses the phrase POS of text in col1 if there is one, otherwise uses phrase POS of col2)
+  Combine the list of token POSs (append col2 to col1)
+Remove the extra column
+```
