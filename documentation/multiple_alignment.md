@@ -60,8 +60,8 @@ Split into columns:
   N = height/depth of the collapsed word trie
   Create N new alignment table columns to replace the original column-to-be-split
   For each phrase in the old column:
-    Get the list corresponding to tracing the phrase out in the collapsed word trie (if right-to-left, reverse the list)
-    Write list element X into column X (if right-to-left, write element X into column N-X)
+    Get the list corresponding to tracing the phrase out in the collapsed word trie, padding the tail end of the list with blank strings (if right-to-left, pad the head of the list)
+    Write list element X into column X
 ```
 
 ### <a id="mergeCol"></a>Alignment column merging (mergeCol)
