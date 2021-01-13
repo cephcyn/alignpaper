@@ -78,13 +78,16 @@ For each row in the columns:
 Remove the extra column
 ```
 
-### <a id="tempScoreVector"></a>Alignment scoring (tempScoreVector)
-
-TODO - I need to rename this and update documentation when I clean up this function.
+### <a id="tempScoreVector"></a>Alignment scoring (scoreAlignment)
 
 Calculates an overall score for a given [alignment table]((#formatAlignment). It does this by calculating a weighted sum of several sub-scores, each of which target different desired traits for a good text alignment.
 
-TODO: explain score-per-column weighting and overall sub-score weighting
+There are way more sub-score types than are actually used in the overall score.
+
+There are a few candidates for overall score weighting:
+- 1 * [(number of columns)](#score_numcolumns) + -1 * [(text embedding variance)](score_colptxtembed) (**TODO update? - this is the method I'm primarily using**)
+- 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct tokens w/ variance)](score_coltoknvarcount)
+- 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct entity TUIs w/ variance)](score_colttuivarcount)
 
 #### Weighting schemes
 
@@ -115,55 +118,55 @@ I've also experimented with adjusting both of these weighting schemes for distin
 
 #### Score components
 
-##### <a id="scoreNumColumns"></a>Score: number of columns (scoreNumColumns)
+##### <a id="score_numcolumns"></a>Score: number of columns (scoreNumColumns)
 
 Number of columns divided by the largest number of tokens present in any single given row.
 - Division is because the initial number of columns is determined in part by maximum token count (every single token occupies its own cell)
 
-##### <a id="score_coltextcount"></a>Score: number of distinct phrases per column (score_coltextcount)
+##### <a id="score_coltextcount"></a>Score: number of distinct phrases per column (scoreColumnTextCount)
 
 The number of unique cells / texts / phrases in a given column.
 
-##### <a id="score_colptxtembed"></a>Score: phrase embedding variance per column (score_colptxtembed)
+##### <a id="score_colptxtembed"></a>Score: phrase embedding variance per column (scoreColumnPhraseEmbedVariance)
 
 The trace of the covariance matrix containing phrase embeddings for all of the phrases within a given column.
 - Trace(covariance(embeddings)) is because https://stats.stackexchange.com/questions/225434/a-measure-of-variance-from-the-covariance-matrix
 - The word embedding for a phrase is calculated as a sum of word2vec embeds (for tokens that have embeds)
 - If a column has no tokens that have valid word2vec embeds, then it returns 0.
 
-##### <a id="score_coltokncount"></a>Score: number of distinct tokens per column (score_coltokncount)
+##### <a id="score_coltokncount"></a>Score: number of distinct tokens per column (scoreColumnTokenCount)
 
 The number of unique tokens / words in a given column.
 
 <a id="score_coltoknvarcount"></a>
-Also can apply a variation count: the number of unique tokens / words in a given column that *don't appear in all of the rows*
+Also can apply a variation count: the number of unique tokens / words in a given column that *don't appear in all of the rows* (scoreColumnTokenVariationCount)
 
-##### <a id="score_coltentcount"></a>Score: number of distinct entities per column (score_coltentcount)
+##### <a id="score_coltentcount"></a>Score: number of distinct entities per column (scoreColumnTokenEntityCount)
 
 The number of unique entities in a given column.
 
 <a id="score_coltentvarcount"></a>
-Also can apply a variation count: the number of unique entities in a given column that *don't appear in all of the rows*
+Also can apply a variation count: the number of unique entities in a given column that *don't appear in all of the rows* (scoreColumnTokenEntityVariationCount)
 
-##### <a id="score_colttuicount"></a>Score: number of distinct entity types per column (score_colttuicount)
+##### <a id="score_colttuicount"></a>Score: number of distinct entity types per column (scoreColumnTokenEntityCount)
 
 The number of unique entity types in a given column. This is different from the unique entities because there are some entities that end up grouping into the same entity type: for example, "patient" and "outpatient" may be the same entity type but have unique entity IDs.
 
 <a id="score_colttuivarcount"></a>
-Also can apply a variation count: the number of unique entity types in a given column that *don't appear in all of the rows*
+Also can apply a variation count: the number of unique entity types in a given column that *don't appear in all of the rows* (scoreColumnTokenEntityVariationCount)
 
-##### <a id="score_colpposcount"></a>Score: number of distinct phrase POS per column (score_colpposcount)
+##### <a id="score_colpposcount"></a>Score: number of distinct phrase POS per column (scoreColumnPhrasePOSCount)
 
 The number of unique phrase POSs (e.g. NP, VP) in a given column. (The phrase POS itself is determined by constituency parse and is often very variable for parse tree structure itself.)
 
-##### <a id="score_coltposcount"></a>Score: number of distinct token POS per column (score_coltposcount)
+##### <a id="score_coltposcount"></a>Score: number of distinct token POS per column (scoreColumnPOSCount)
 
 The number of unique token POSs (e.g. NN, NNS, JJ, CD) in a given column. (The token POS is determined by constituency parse, which is relatively stable for token POS tagging.)
 
 <a id="score_coltposvarcount"></a>
-Also can apply a variation count: the number of unique token POSs in a given column that *don't appear in all of the rows*
+Also can apply a variation count: the number of unique token POSs in a given column that *don't appear in all of the rows* (scoreColumnPOSVariationCount)
 
-##### <a id="score_colrepresent"></a>Score: number of rows that are represented per column (score_colrepresent)
+##### <a id="score_colrepresent"></a>Score: number of rows that are represented per column (scoreColumnRepresentation)
 
 The fraction of rows that are represented (have any cells with content in them) in a given column.
 
@@ -171,7 +174,7 @@ The fraction of rows that are represented (have any cells with content in them) 
 
 The [SW alignment score](#alignRowMajorLocal_scoringFunction) of an alignment between a given target row and the full alignment. This is intended to allow a user to specify a target row or pattern to match to, and provide additional emphasis on how well the alignment itself matches that.
 
-##### <a id="score_termcolcount"></a>Score: weighted sum of how frequently target terms are repeated per column (score_termcolcount)
+##### <a id="score_termcolcount"></a>Score: weighted sum of how frequently target terms are repeated per column (scoreTermListColumnCount / scoreTermColumnCount)
 
 A score intended to discourage terms from being spread across a large number of columns in an alignment. It calculates the number of columns that a given term (or terms) is present in within the full alignment, then sums them together (equally by default, or otherwise with a given set of weights for all of the terms).
 
