@@ -63,9 +63,9 @@ Calculates an overall score for a given [alignment table]((#formatAlignment). It
 There are way more sub-score types than are actually used in the overall score.
 
 There are a few candidates for overall score weighting:
-- 1 * [(number of columns)](#score_numcolumns) + -1 * [(text embedding variance)](score_colptxtembed) (**this is the method I'm primarily using**)
-- 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct tokens w/ variance)](score_coltoknvarcount)
-- 1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct entity TUIs w/ variance)](score_colttuivarcount)
+- -1 * [(number of columns)](#score_numcolumns) + -1 * [(text embedding variance)](score_colptxtembed) (**this is the method I'm primarily using**)
+- -1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct tokens w/ variance)](score_coltoknvarcount)
+- -1 * [(number of columns)](#score_numcolumns) + -1 * [(distinct entity TUIs w/ variance)](score_colttuivarcount)
 
 #### Weighting schemes
 
