@@ -213,3 +213,16 @@ For each row in the columns:
   Combine the list of token POSs (append col2 to col1)
 Remove the extra column
 ```
+
+#### <a id="shiftCell"></a>Alignment cell shifting (shiftCell)
+
+Shift the specified cell (or set of cells) N spaces to the left or to the right. It will (not shift | only shift the maximum possible number of spaces without overwriting any other cells) if the specified shift distance N overlaps with other cell contents or with the alignment boundaries.
+
+Pseudocode:
+```
+Calculate the maximum possible distance the specified segment can be shifted...
+  - without overwriting non-empty cell contents
+  - without exceeding the given shift distance
+Remove the specified segment (overwrite with empty)
+Write the specified segment content into the new location
+```
