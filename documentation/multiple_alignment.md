@@ -218,6 +218,8 @@ Remove the extra column
 
 Shift the specified cell (or set of cells) N spaces to the left or to the right. It will (not shift | only shift the maximum possible number of spaces without overwriting any other cells) if the specified shift distance N overlaps with other cell contents or with the alignment boundaries.
 
+TODO elaborate on which sets of cells for shifting the search algorithm actually considers
+
 Pseudocode:
 ```
 Calculate the maximum possible distance the specified segment can be shifted...
