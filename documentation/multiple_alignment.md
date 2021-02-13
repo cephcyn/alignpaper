@@ -38,11 +38,11 @@ Inputs:
 
 TODO elaborate
 
-#### ~~<a id="buildAlignmentBeamSearch"></a>How to get the ordering of when to add each row into the "full alignment" for alignRowMajorLocal?
+#### ~~<a id="buildAlignmentBeamSearch"></a>How to get the ordering of when to add each row into the "full alignment" for alignRowMajorLocal?~~
 
 This isn't important, I implemented this for curiosity's sake.
 
-~~buildAlignmentBeamSearch: perform a beam search.
+~~buildAlignmentBeamSearch: perform a beam search.~~
 
 Pseudocode:
 
@@ -58,7 +58,7 @@ while all the elements in the beam don't contain all of the rows:
 return the alignment (alignment ordering) of the first/best element/alignment in the beam
 ```
 
-~~I'm not sure that this search actually works well, especially when the S/W align function isn't *too* great to start with... TODO, I want to test if this works better with the S-W alignment score or the full-alignment score. I feel like intuitively it would work better with the full-alignment score.
+~~I'm not sure that this search actually works well, especially when the S/W align function isn't *too* great to start with... TODO, I want to test if this works better with the S-W alignment score or the full-alignment score. I feel like intuitively it would work better with the full-alignment score.~~
 
 ### <a id="tempScoreVector"></a>Alignment scoring (scoreAlignment)
 
