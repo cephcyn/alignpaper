@@ -1,0 +1,20 @@
+1248	people with diabetes	s-pos						['NNS']			['IN']													['NN']									
+1248	people with diabetes	s-txt						people			with													diabetes									
+1275	People without and with diabetes who are at hi...	s-pos						['NNS']	['IN']	['CC']	['IN']	['NNS']	['WP']	['VBP']	['IN']	['JJ']	['NN']	['IN']	['JJ']					['NN']									
+1275	People without and with diabetes who are at hi...	s-txt						People	without	and	with	diabetes	who	are	at	high	risk	for	cardiovascular					disease									
+1381	diabetic patients with borderline hypertension .	s-pos					['JJ']	['NNS']			['IN']					['JJ']								['NN']			['.']						
+1381	diabetic patients with borderline hypertension .	s-txt					diabetic	patients			with					borderline								hypertension			.						
+1387	borderline hypertensive patients with IDDM - t...	s-pos		['VB']			['JJ']	['NNS']			['IN']						['NN']			['HYPH']	['NN']			['NN']		['NN']	['.']						
+1387	borderline hypertensive patients with IDDM - t...	s-txt		borderline			hypertensive	patients			with						IDDM			-	type			diabetes		mellitus	.						
+3871	360 diabetic patients with coronary artery dis...	s-pos				['CD']	['JJ']	['NNS']			['IN']								['JJ']		['NN']			['NN']									
+3871	360 diabetic patients with coronary artery dis...	s-txt				360	diabetic	patients			with								coronary		artery			disease									
+4039	with type 1 diabetes ( T1D )	s-pos									['IN']										['NN']	['CD']		['NN']	['-LRB-']	['NN']		['-RRB-']					
+4039	with type 1 diabetes ( T1D )	s-txt									with										type	1		diabetes	(	T1D		)					
+5202	type 2 diabetes mellitus patients " with nephr...	s-pos																			['NN']	['CD']		['NN']		['NN']			['NNS']	['"']	['IN']	['NN']	['"']
+5202	type 2 diabetes mellitus patients " with nephr...	s-txt																			type	2		diabetes		mellitus			patients	"	with	nephropathy	"
+5204	type 2 diabetes mellitus patients	s-pos																			['NN']	['CD']		['NN']		['NN']			['NNS']				
+5204	type 2 diabetes mellitus patients	s-txt																			type	2		diabetes		mellitus			patients				
+6563	Type II diabetic patients .	s-pos			['NN']	['CD']	['JJ']	['NNS']																			['.']						
+6563	Type II diabetic patients .	s-txt			Type	II	diabetic	patients																			.						
+6569	non - insulin dependent diabetes mellitus .	s-pos					['JJ']									['JJ']			['JJ']				['JJ']	['NN']		['NN']	['.']						
+6569	non - insulin dependent diabetes mellitus .	s-txt					non									-			insulin				dependent	diabetes		mellitus	.						

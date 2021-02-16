@@ -1,0 +1,22 @@
+2030	patients with cancer - associated anemia .	s-pos					['NNS', 'IN']										['NN']	['HYPH']	['VBN']		['NNP']			['.']	
+2030	patients with cancer - associated anemia .	s-txt					patients with										cancer	-	associated		anemia			.	
+2078	anemic patients with cancer .	s-pos		['JJ']			['NNS', 'IN']										['NN']							['.']	
+2078	anemic patients with cancer .	s-txt		anemic			patients with										cancer							.	
+2380	patients with early breast cancer	s-pos					['NNS', 'IN']				['JJ']				['NN']		['NN']								
+2380	patients with early breast cancer	s-txt					patients with				early				breast		cancer								
+2437	patients with early breast cancer :	s-pos					['NNS', 'IN']				['JJ']				['NN']		['NN']								[':']
+2437	patients with early breast cancer :	s-txt					patients with				early				breast		cancer								:
+2711	patients with metastatic breast cancer ( MBC ) .	s-pos					['NNS', 'IN']			['JJ']					['NN']		['NN']	['-LRB-']		['NNP']	['-RRB-']			['.']	
+2711	patients with metastatic breast cancer ( MBC ) .	s-txt					patients with			metastatic					breast		cancer	(		MBC	)			.	
+2849	breast cancer surgery in Japanese patients .	s-pos													['NN']		['NN']					['NN', 'IN', 'JJ']	['NNS']	['.']	
+2849	breast cancer surgery in Japanese patients .	s-txt													breast		cancer					surgery in Japanese	patients	.	
+3194	223 postmenopausal breast cancer survivors .	s-pos											['CD']	['NN']	['NN']		['NN']						['NNS']	['.']	
+3194	223 postmenopausal breast cancer survivors .	s-txt											223	postmenopausal	breast		cancer						survivors	.	
+3285	chemo - naïve non - small cell lung cancer pat...	s-pos				['NNP', 'HYPH', 'NNP']		['JJ']	['JJ']		['JJ']			['NN']		['NN']	['NN']						['NNS']		
+3285	chemo - naïve non - small cell lung cancer pat...	s-txt				chemo - naïve		non	-		small			cell		lung	cancer						patients		
+4887	chemotherapy - naïve patients with breast cancer	s-pos				['NNP', 'HYPH', 'NNP']	['NNS', 'IN']								['NN']		['NN']								
+4887	chemotherapy - naïve patients with breast cancer	s-txt				chemotherapy - naïve	patients with								breast		cancer								
+5437	postoperative stage II and III rectal cancer p...	s-pos							['JJ']		['NN']	['NNP', 'CC']	['CD']			['JJ']	['NN']						['NNS']		
+5437	postoperative stage II and III rectal cancer p...	s-txt							postoperative		stage	II and	III			rectal	cancer						patients		
+6915	previously untreated patients with prostatic c...	s-pos		['RB']	['JJ']		['NNS', 'IN']			['JJ']							['NN']								
+6915	previously untreated patients with prostatic c...	s-txt		previously	untreated		patients with			prostatic							cancer								
