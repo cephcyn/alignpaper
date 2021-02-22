@@ -1,4 +1,4 @@
-name: nlp
+name: alignpaper
 channels:
   - defaults
 dependencies:
@@ -21,4 +21,4 @@ dependencies:
   - pyyaml
   - pillow
   - torchvision
-prefix: /home/cephcyn/miniconda3/envs/nlp
+prefix: /home/cephcyn/miniconda3/envs/alignpaper
