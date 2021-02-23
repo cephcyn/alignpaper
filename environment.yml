@@ -6,7 +6,6 @@ dependencies:
   - numpy
   - jupyter
   - pandas
-  - praw
   - nltk
   - altair
   - matplotlib
@@ -14,11 +13,10 @@ dependencies:
   - gensim
   - tensorflow
   - tensorflow-hub
-  - fastcluster
-  - altair_saver
+  - conda-forge::fastcluster
+  - conda-forge::altair_saver
   - jupyterlab
   - yaml
   - pyyaml
   - pillow
   - torchvision
-prefix: /home/cephcyn/miniconda3/envs/alignpaper
