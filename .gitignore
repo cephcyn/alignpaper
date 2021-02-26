@@ -1,4 +1,4 @@
 *.pkl
-*.hdf
 
 model/
+data/ebm_nlp_2_00*
