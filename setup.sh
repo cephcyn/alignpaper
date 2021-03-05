@@ -11,3 +11,4 @@
 # GET EBM-NLP DATA
 # wget -O data/ebm_nlp_2_00.tar.gz https://github.com/bepnye/EBM-NLP/raw/master/ebm_nlp_2_00.tar.gz
 # tar -xf data/ebm_nlp_2_00.tar.gz -C data/
+
