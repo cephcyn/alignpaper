@@ -1,0 +1,4 @@
+1	green people with asdfghjklic cancer	s-pos		['JJ']	['NNS']	['IN']	['JJ']	['NN']
+1	green people with asdfghjklic cancer	s-txt		green	people	with	asdfghjklic	cancer
+2	green cancer	s-pos					['JJ']	['NN']
+2	green cancer	s-txt					green	cancer

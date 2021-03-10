@@ -1,0 +1,14 @@
+1	breast cancer	s-pos		['NN']		['NN']							
+1	breast cancer	s-txt		breast		cancer							
+2	breast cancer ( MBC )	s-pos		['NN']		['NN']	['-LRB-']	['NNP']	['-RRB-']				
+2	breast cancer ( MBC )	s-txt		breast		cancer	(	MBC	)				
+3	breast cancer surgery in Japanese patients	s-pos		['NN']		['NN']				['NN']	['IN']	['JJ']	['NNS']
+3	breast cancer surgery in Japanese patients	s-txt		breast		cancer				surgery	in	Japanese	patients
+4	breast cancer survivors	s-pos		['NN']		['NN']	['NNS']						
+4	breast cancer survivors	s-txt		breast		cancer	survivors						
+5	lung cancer	s-pos		['NN']		['NN']							['NNS']
+5	lung cancer	s-txt		lung		cancer							patients
+6	breast cancer	s-pos		['NN']		['NN']							
+6	breast cancer	s-txt		breast		cancer							
+7	rectal cancer patients	s-pos			['JJ']	['NN']							['NNS']
+7	rectal cancer patients	s-txt			rectal	cancer							patients

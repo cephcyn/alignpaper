@@ -1,0 +1,4 @@
+1	52 people with asdfghjklic cancer	s-pos		['CD']	['NNS']	['IN']	['JJ']	['NN']
+1	52 people with asdfghjklic cancer	s-txt		52	people	with	asdfghjklic	cancer
+2	green cancer	s-pos		['JJ']				['NN']
+2	green cancer	s-txt		green				cancer

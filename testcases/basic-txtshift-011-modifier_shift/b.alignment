@@ -1,0 +1,4 @@
+1	severe rhinitis following nasal operation	s-pos		['VBG']	['NNS']	['VBG']	['JJ']	['NN']
+1	severe rhinitis following nasal operation	s-txt		severe	rhinitis	following	nasal	operation
+2	after nose surgery	s-pos		['IN']			['NN']	['NN']
+2	after nose surgery	s-txt		after			nose	surgery

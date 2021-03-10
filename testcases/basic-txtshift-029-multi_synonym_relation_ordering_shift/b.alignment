@@ -1,0 +1,22 @@
+1	patients with cancer - associated anemia .	s-pos							['NNS']	['IN']											['NN']				['HYPH']	['VBN']	['NNP']				['.']	
+1	patients with cancer - associated anemia .	s-txt							patients	with											cancer				-	associated	anemia				.	
+2	anemic patients with cancer .	s-pos					['JJ']		['NNS']	['IN']											['NN']										['.']	
+2	anemic patients with cancer .	s-txt					anemic		patients	with											cancer										.	
+3	patients with early breast cancer	s-pos							['NNS']	['IN']				['JJ']					['NN']		['NN']											
+3	patients with early breast cancer	s-txt							patients	with				early					breast		cancer											
+4	patients with early breast cancer :	s-pos							['NNS']	['IN']				['JJ']					['NN']		['NN']											[':']
+4	patients with early breast cancer :	s-txt							patients	with				early					breast		cancer											:
+5	patients with metastatic breast cancer ( MBC ) .	s-pos							['NNS']	['IN']			['JJ']						['NN']		['NN']	['-LRB-']	['NNP']	['-RRB-']							['.']	
+5	patients with metastatic breast cancer ( MBC ) .	s-txt							patients	with			metastatic						breast		cancer	(	MBC	)							.	
+6	breast cancer surgery in Japanese patients .	s-pos																	['NN']		['NN']						['NN']	['IN']	['JJ']	['NNS']	['.']	
+6	breast cancer surgery in Japanese patients .	s-txt																	breast		cancer						surgery	in	Japanese	patients	.	
+7	223 postmenopausal breast cancer survivors .	s-pos		['CD']														['NN']	['NN']		['NN']									['NNS']	['.']	
+7	223 postmenopausal breast cancer survivors .	s-txt		223														postmenopausal	breast		cancer									survivors	.	
+8	chemo - naïve non - small cell lung cancer pat...	s-pos				['NNP']	['HYPH']	['NNP']			['JJ']	['JJ']		['JJ']		['NN']				['NN']	['NN']									['NNS']		
+8	chemo - naïve non - small cell lung cancer pat...	s-txt				chemo	-	naïve			non	-		small		cell				lung	cancer									patients		
+9	chemotherapy - naïve patients with breast cancer	s-pos				['NNP']	['HYPH']	['NNP']	['NNS']	['IN']									['NN']		['NN']											
+9	chemotherapy - naïve patients with breast cancer	s-txt				chemotherapy	-	naïve	patients	with									breast		cancer											
+10	postoperative stage II and III rectal cancer p...	s-pos										['JJ']		['NN']	['NNP']	['CC']	['CD']			['JJ']	['NN']									['NNS']		
+10	postoperative stage II and III rectal cancer p...	s-txt										postoperative		stage	II	and	III			rectal	cancer									patients		
+11	previously untreated patients with prostatic c...	s-pos		['RB']	['JJ']				['NNS']	['IN']										['JJ']	['NN']											
+11	previously untreated patients with prostatic c...	s-txt		previously	untreated				patients	with										prostatic	cancer											

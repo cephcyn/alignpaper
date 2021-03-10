@@ -1,0 +1,4 @@
+1	green people with lung cancer	s-pos		['JJ']	['NNS']	['IN']	['NNP']	['NN']
+1	green people with lung cancer	s-txt		green	people	with	lung	cancer
+2	green cancer	s-pos					['JJ']	['NN']
+2	green cancer	s-txt					green	cancer
