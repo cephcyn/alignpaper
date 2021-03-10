@@ -1,0 +1,4 @@
+1	hypertensive patients receiving drug treatment	s-pos		['JJ']	['NNS']	['VBG']				['NN']	['NN']	
+1	hypertensive patients receiving drug treatment	s-txt		hypertensive	patients	receiving				drug	treatment	
+2	hypertensives on chronic , stable antihypertensiive therapy .	s-pos		['NNS']		['IN']	['JJ']	[',']	['JJ']	['JJ']	['NN']	['.']
+2	hypertensives on chronic , stable antihypertensiive therapy .	s-txt		hypertensives		on	chronic	,	stable	antihypertensive	therapy	.
