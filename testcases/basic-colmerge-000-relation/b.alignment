@@ -1,0 +1,4 @@
+1	breast cancer	s-pos		['NN']	['NN']
+1	breast cancer	s-txt		breast	cancer
+2	rectal cancer	s-pos		['JJ']	['NN']
+2	rectal cancer	s-txt		rectal	cancer
