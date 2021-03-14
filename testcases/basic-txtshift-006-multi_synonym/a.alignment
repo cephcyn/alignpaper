@@ -1,5 +1,5 @@
-1	late-stage breast tumor	s-pos		['JJ', 'HYPH', 'NN']	['NN']	['NNP']
-1	late-stage breast tumor	s-txt		late-stage	breast	tumor
+1	late - stage breast tumor	s-pos		['JJ', 'HYPH', 'NN']	['NN']	['NNP']
+1	late - stage breast tumor	s-txt		late - stage	breast	tumor
 2	cancer	s-pos			['NN']	
 2	cancer	s-txt			cancer	
 3	cancer	s-pos			['NN']	
