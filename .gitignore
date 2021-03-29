@@ -1,4 +1,5 @@
-*.pkl
-
+__pycache__/
 model/
 data/ebm_nlp_2_00*
+
+*.pkl
