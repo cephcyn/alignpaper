@@ -4,10 +4,6 @@ import traceback
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
-def index():
-	return 'Please use the API!'
-
 @app.route('/api', methods=['GET'])
 def api():
 	# retrieve arguments
@@ -18,7 +14,7 @@ def api():
 		else:
 			word = 'default'
 	except:
-		return f'error: improperly formatted or missing arguments ... ... ... {traceback.format_exc()}'
+		return {'error':'improperly formatted or missing arguments','traceback':f'{traceback.format_exc()}'}
 	# build output
 	return {'id':id,'word':word,'somearray':['foo','bar','baz']}
 
