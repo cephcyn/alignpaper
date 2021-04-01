@@ -19,6 +19,6 @@ def api():
 	# TODO temporary - read the temp data file
 	with open(f'temp/testjsonformatalignment.json') as f:
 		data = json.load(f)
-	data['argument_data'] = f'{arg_id}_{arg_word}'
+	data['temp_argument_data'] = f'{arg_id}_{arg_word}'
 	# build output
 	return data

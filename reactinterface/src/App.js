@@ -4,14 +4,10 @@ import logo from './logo.svg';
 import './App.css';
 
 class AlignmentTable extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
-    console.log("rerendering AlignmentTable =========");
-    console.log("props:", this.props);
-    console.log("state:", this.state);
+    // console.log("rerendering AlignmentTable =========");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
 
     const rows = this.props.data.map(
       (row) => {
@@ -40,11 +36,28 @@ class AlignmentTable extends React.Component {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {alignment: []};
+    this.state = {
+      alignment: [],
+      inputvalue: ""
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+    this.activateLasers = this.activateLasers.bind(this);
   }
 
-  componentDidMount() {
-    fetch(this.props.apiUrl)
+  componentDidMount() {}
+
+  handleChange(e) {
+    this.setState({inputvalue: e.target.value});
+  }
+
+  activateLasers(e) {
+    e.preventDefault();
+    console.log(e, "Button clicked! value="+this.state.inputvalue);
+    fetch(this.props.apiUrl+new URLSearchParams({
+      id: "3",
+      word: this.state.inputvalue,
+    }))
       .then((response) => response.json())
       .then((data) => this.setState(data));
   }
@@ -53,11 +66,16 @@ class App extends React.Component {
     console.log("rerendering App =========");
     console.log("props:", this.props);
     console.log("state:", this.state);
-    console.log(this.state.alignment);
 
     return (
       <div className="App">
+        <textarea value={this.state.inputvalue} onChange={this.handleChange} />
+        <br />
+        <button onClick={this.activateLasers}>Submit Request</button>
+        <br />
+        <br />
         <AlignmentTable data={this.state.alignment} />
+        <br />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
     );
