@@ -67,6 +67,14 @@ class App extends React.Component {
     console.log("props:", this.props);
     console.log("state:", this.state);
 
+    // only render alignment if there's content
+    let aligntable;
+    if (this.state.alignment.length > 0) {
+      aligntable = <AlignmentTable data={this.state.alignment} />
+    } else {
+      aligntable = <br />
+    }
+
     return (
       <div className="App">
         <textarea value={this.state.inputvalue} onChange={this.handleChange} />
@@ -74,7 +82,9 @@ class App extends React.Component {
         <button onClick={this.activateLasers}>Submit Request</button>
         <br />
         <br />
-        <AlignmentTable data={this.state.alignment} />
+        {aligntable}
+        <p>temp_arg_data is...</p>
+        <p>{this.state.temp_arg_data}</p>
         <br />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
