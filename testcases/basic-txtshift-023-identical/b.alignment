@@ -1,4 +1,0 @@
-1	anemia	s-pos			['NNP']	
-1	anemia	s-txt			anemia	
-2	( anemia )	s-pos		['-LRB-']	['NNP']	['-RRB-']
-2	( anemia )	s-txt		(	anemia	)

@@ -1,4 +1,0 @@
-1	late - stage breast cancer	s-pos		['JJ', 'HYPH', 'NN']	['NN']	['NN']
-1	late - stage breast cancer	s-txt		late - stage	breast	cancer
-2	carcinogen	s-pos				['NNP']
-2	carcinogen	s-txt				carcinogen

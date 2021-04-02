@@ -1,4 +1,0 @@
-1	mammalian (breast) cancer	s-pos		['NNP']	['-LRB-']	['NN']	['-RRB-']	['NN']
-1	mammalian (breast) cancer	s-txt		mammalian	(	breast	)	cancer
-2	mammory cancer	s-pos		['NN']				['NN']
-2	mammory cancer	s-txt		mammory				cancer

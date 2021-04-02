@@ -1,4 +1,0 @@
-1	dogs and cats diagnosed clinically with FAD .	s-pos			['NNS']			['CC']			['NNS']	['VBD']				['RB']	['IN']	['NNP']	['.']
-1	dogs and cats diagnosed clinically with FAD .	s-txt			dogs			and			cats	diagnosed				clinically	with	FAD	.
-2	397 dogs free from adult heartworm infection from four heartworm - endemic areas	s-pos		['CD']	['NNS']	['JJ']	['IN']	['NN']	['NN']	['NN']	['IN']	['CD']	['NN']	['HYPH']	['JJ']	['NNS']			
-2	397 dogs free from adult heartworm infection from four heartworm - endemic areas	s-txt		397	dogs	free	of	adult	heartworm	infection	from	four	heartworm	-	endemic	areas			
