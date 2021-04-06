@@ -3,6 +3,56 @@ from flask import request
 import traceback
 import json
 from os import path
+import pandas as pd
+import numpy as np
+
+import alignment
+
+# NLP model imports...
+print('=== STARTING NLP MODEL IMPORTS ===')
+
+# # TODO-REFERENCE originally from analyze.ipynb
+# # For sentence tokenization
+# from nltk import tokenize
+
+# # TODO-REFERENCE originally from analyze.ipynb
+# # For coreference resolution
+# from allennlp.predictors.predictor import Predictor
+# import allennlp_models.coref
+# coref_predictor = Predictor.from_path(
+#     "https://storage.googleapis.com/allennlp-public-models/coref-spanbert-large-2021.03.10.tar.gz"
+# )
+
+# TODO-REFERENCE originally from analyze.ipynb
+from allennlp.predictors.predictor import Predictor
+import allennlp_models.tagging
+# For constituency parsing
+constituency_predictor = Predictor.from_path(
+    "https://storage.googleapis.com/allennlp-public-models/elmo-constituency-parser-2020.02.10.tar.gz"
+)
+
+# # TODO-REFERENCE originally from analyze.ipynb
+# from allennlp.predictors.predictor import Predictor
+# import allennlp_models.structured_prediction
+# # For dependency parsing
+# dependency_predictor = Predictor.from_path(
+#     "https://storage.googleapis.com/allennlp-public-models/biaffine-dependency-parser-ptb-2020.04.06.tar.gz"
+# )
+
+# # TODO-REFERENCE originally from alignment.ipynb
+# import gensim
+# # Load fasttext-wiki-news-subwords-300 pretrained model
+# fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load('model/fasttext-wiki-news-subwords-300.model', mmap='r')
+
+# # TODO-REFERENCE originally from alignment.ipynb
+# import spacy
+# sp = spacy.load('en_core_web_sm')
+# import scispacy
+# from scispacy.linking import EntityLinker
+# scisp = spacy.load('en_core_sci_sm')
+# linker = scisp.add_pipe('scispacy_linker', config={'resolve_abbreviations': True, 'linker_name': 'umls'})
+
+print('=== FINISHED NLP MODEL IMPORTS ===')
 
 # Flask-specific code...
 app = Flask(__name__)
@@ -12,28 +62,60 @@ def api():
 	# retrieve arguments
 	try:
 		# arg_id = int(request.args['id'])
-		arg_data = request.args['word'].split('\n') if ('word' in request.args) else ['default']
+		arg_input = request.args['input'].split('\n') if ('input' in request.args) else ['default']
 	except:
 		return {'error':'improperly formatted or missing arguments','traceback':f'{traceback.format_exc()}'}
-	print('arg_data:', arg_data)
-	if path.isfile(f'testcases/{arg_data[0]}/a.json'):
+	print('arg_input:', arg_input)
+	if path.isfile(f'testcases/{arg_input[0]}/a.json'):
 		# TODO temporary - read the temp data file
 		print('=== READING FILE FROM DISK AS IT EXISTS!!!: ===')
-		print(f'testcases/{arg_data[0]}/a.json')
-		with open(f'testcases/{arg_data[0]}/a.json') as f:
+		print(f'testcases/{arg_input[0]}/a.json')
+		with open(f'testcases/{arg_input[0]}/a.json') as f:
 			data = json.load(f)
 	else:
 		print('=== WRITING DATA DIRECTLY IN AS ALIGNMENT DATA: ===')
-		data = {
-			'alignment': [
-				{
-					'id': i,
-					'pos': [['TMP']],
-					'txt': [[arg_data[i]]],
-				} for i in range(len(arg_data))
-			]
-		}
-		print(data)
-	data['temp_arg_data'] = arg_data
+		data = {}
+		# retrieve the constituency parse information
+		data['parse_constituency'] = dict(zip(
+			range(len(arg_input)),
+			[alignment.parse_constituency(constituency_predictor, p) for p in arg_input]
+		))
+		print(data['parse_constituency'])
+		print('===')
+		# build the raw input df that the alignment and search algorithms build on top of...
+		input_df_dict = {}
+		for txt_id in data['parse_constituency']:
+			tokens = []
+			for token_i in range(len(data['parse_constituency'][txt_id]['tokens'])):
+				tokens.append(
+					(
+						data['parse_constituency'][txt_id]['tokens'][token_i],
+						'',
+						[data['parse_constituency'][txt_id]['pos_tags'][token_i]],
+					)
+				)
+			input_df_dict[txt_id] = tokens
+		align_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
+		align_df = align_df.applymap(lambda x: ('', '', []) if (x is None) else x)
+		align_df.columns = [f'txt{i}' for i in range(len(align_df.columns))]
+		# data['input_df'] = align_df
+		print(align_df)
+		print('===')
+		# align the texts!
+		# TODO
+		# create the final alignment output
+		# TODO update this
+		data['alignment'] = alignment.alignment_to_jsondict(align_df)['alignment']
+		# temp_alignment = [
+		# 	{
+		# 		'id': i,
+		# 		'pos': [['TMP']],
+		# 		'txt': [[arg_input[i]]],
+		# 	}
+		# 	for i in range(len(arg_input))
+		# ]
+		print(data['alignment'])
+		print('===')
+	data['temp_arg_input'] = arg_input
 	# build output
 	return data

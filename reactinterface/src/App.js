@@ -57,8 +57,8 @@ class App extends React.Component {
     console.log("value=");
     console.log(this.state.inputvalue);
     fetch(this.props.apiUrl+new URLSearchParams({
-      id: "3",
-      word: this.state.inputvalue,
+      input: this.state.inputvalue,
+      // id: "3",
     }))
       .then((response) => response.json())
       .then((data) => this.setState(data));
@@ -85,8 +85,8 @@ class App extends React.Component {
         <br />
         <br />
         {aligntable}
-        <p>temp_arg_data is...</p>
-        <p>{this.state.temp_arg_data}</p>
+        <p>temp_arg_input is...</p>
+        <p>{this.state.temp_arg_input}</p>
         <br />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
