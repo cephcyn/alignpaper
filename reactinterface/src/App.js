@@ -53,7 +53,9 @@ class App extends React.Component {
 
   activateLasers(e) {
     e.preventDefault();
-    console.log(e, "Button clicked! value="+this.state.inputvalue);
+    console.log(e, "Button clicked!");
+    console.log("value=");
+    console.log(this.state.inputvalue);
     fetch(this.props.apiUrl+new URLSearchParams({
       id: "3",
       word: this.state.inputvalue,
