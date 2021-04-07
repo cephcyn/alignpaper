@@ -80,8 +80,6 @@ def api():
 			range(len(arg_input)),
 			[alignment.parse_constituency(constituency_predictor, p) for p in arg_input]
 		))
-		print(data['parse_constituency'])
-		print('===')
 		# build the raw input df that the alignment and search algorithms build on top of...
 		input_df_dict = {}
 		for txt_id in data['parse_constituency']:
@@ -98,22 +96,16 @@ def api():
 		input_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
 		input_df = input_df.applymap(lambda x: ('', '', []) if (x is None) else x)
 		input_df.columns = [f'txt{i}' for i in range(len(input_df.columns))]
-		# data['input_df'] = input_df
-		print(input_df)
-		print('===')
 		# align the texts!
-		# TODO adapt this to multiple input sizes
-		align_df, align_df_score = alignment.alignRowMajorLocal(
-			input_df.loc[[0]],
-			input_df.loc[[1]],
-			embed_model=fasttext
-		)
-		print(align_df)
-		print('===')
+		align_df = input_df.loc[[0]]
+		for i in range(1, len(input_df)):
+			align_df, align_df_score = alignment.alignRowMajorLocal(
+				align_df,
+				input_df.loc[[i]],
+				embed_model=fasttext
+			)
 		# convert the final alignment output to an outputtable format
 		data['alignment'] = alignment.alignment_to_jsondict(align_df)['alignment']
-		print(data['alignment'])
-		print('===')
 	data['temp_arg_input'] = arg_input
 	# build output
 	return data

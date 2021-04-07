@@ -331,3 +331,6 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     output = output.append(realign_a)
     output = output.append(realign_b)
     return output.applymap(lambda x: ('', '', []) if x is np.nan else x), np.amax(scores, axis=None)
+
+# TODO-IMPORT column splitting from alignment.ipynb ?
+# TODO-IMPORT column merging from alignment.ipynb ?
