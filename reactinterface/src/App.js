@@ -38,7 +38,8 @@ class App extends React.Component {
     super(props);
     this.state = {
       alignment: [],
-      inputvalue: ""
+      inputvalue: "",
+      loading: false,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -53,21 +54,36 @@ class App extends React.Component {
 
   activateLasers(e) {
     e.preventDefault();
-    console.log(e, "Button clicked!");
+    console.log("Button clicked!");
+    console.log(e);
     console.log("value=");
     console.log(this.state.inputvalue);
+    this.setState({ loading: true });
     fetch(this.props.apiUrl+new URLSearchParams({
       input: this.state.inputvalue,
       // id: "3",
     }))
-      .then((response) => response.json())
-      .then((data) => this.setState(data));
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.setState({ loading: false });
+        this.setState(data);
+      });
   }
 
   render() {
-    console.log("rerendering App =========");
+    console.log("rerendering App =========", new Date());
     console.log("props:", this.props);
     console.log("state:", this.state);
+
+    // only render waiting spinner if we are currently waiting on the api
+    let spinner;
+    if (this.state.loading) {
+      spinner = <p>Loading...</p>
+    } else {
+      spinner = <br/>
+    }
 
     // only render alignment if there's content
     let aligntable;
@@ -85,6 +101,7 @@ class App extends React.Component {
         <br />
         <br />
         {aligntable}
+        {spinner}
         <p>temp_arg_input is...</p>
         <p>{this.state.temp_arg_input ? this.state.temp_arg_input.toString() : 'Undefined'}</p>
         <br />
