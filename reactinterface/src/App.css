@@ -7,6 +7,10 @@
   pointer-events: none;
 }
 
+.raw-input {
+  width: 50%;
+}
+
 table,
 td {
   border: 1px solid #333;

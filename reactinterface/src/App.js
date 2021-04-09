@@ -4,15 +4,32 @@ import logo from './logo.svg';
 import './App.css';
 
 class AlignmentTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.shiftButton = this.shiftButton.bind(this);
+  }
+
+  shiftButton(e) {
+    e.preventDefault();
+    console.log("Shift button clicked!");
+    console.log(e);
+  }
+
   render() {
-    // console.log("rerendering AlignmentTable =========");
-    // console.log("props:", this.props);
-    // console.log("state:", this.state);
+    console.log("rerendering AlignmentTable =========");
+    console.log("props:", this.props);
+    console.log("state:", this.state);
 
     const rows = this.props.data.map(
       (row) => {
         const cols = row.txt.map((cell, index) => {
-          return <td key={index}>{cell.join(' ')}</td>
+          return (
+            <td key={index}>
+              <button onClick={this.shiftButton}>&lt;</button>
+              {cell.join(' ')}
+              <button onClick={this.shiftButton}>&gt;</button>
+            </td>
+          );
         });
         return (
           <tr key={row.id}>
@@ -41,9 +58,8 @@ class App extends React.Component {
       inputvalue: "",
       loading: false,
     };
-
     this.handleChange = this.handleChange.bind(this);
-    this.activateLasers = this.activateLasers.bind(this);
+    this.alignRawText = this.alignRawText.bind(this);
   }
 
   componentDidMount() {}
@@ -52,9 +68,9 @@ class App extends React.Component {
     this.setState({inputvalue: e.target.value});
   }
 
-  activateLasers(e) {
+  alignRawText(e) {
     e.preventDefault();
-    console.log("Button clicked!");
+    console.log("Raw text align button clicked!");
     console.log(e);
     console.log("value=");
     console.log(this.state.inputvalue);
@@ -95,16 +111,17 @@ class App extends React.Component {
 
     return (
       <div className="App">
-        <textarea value={this.state.inputvalue} onChange={this.handleChange} />
+        <textarea value={this.state.inputvalue} onChange={this.handleChange} className="raw-input" />
         <br />
-        <button onClick={this.activateLasers}>Submit Request</button>
-        <br />
-        <br />
+        <button onClick={this.alignRawText}>Align Texts</button>
+        <button>This Button Does Nothing</button>
+        <hr />
         {aligntable}
         {spinner}
+        <hr />
         <p>temp_arg_input is...</p>
         <p>{this.state.temp_arg_input ? this.state.temp_arg_input.toString() : 'Undefined'}</p>
-        <br />
+        <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
     );
