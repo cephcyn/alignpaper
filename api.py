@@ -1,3 +1,6 @@
+import gensim
+import allennlp_models.tagging
+from allennlp.predictors.predictor import Predictor
 from flask import Flask
 from flask import request
 import traceback
@@ -24,8 +27,6 @@ print('=== STARTING NLP MODEL IMPORTS ===')
 # )
 
 # TODO-REFERENCE originally from analyze.ipynb
-from allennlp.predictors.predictor import Predictor
-import allennlp_models.tagging
 # For constituency parsing
 constituency_predictor = Predictor.from_path(
     "https://storage.googleapis.com/allennlp-public-models/elmo-constituency-parser-2020.02.10.tar.gz"
@@ -40,9 +41,10 @@ constituency_predictor = Predictor.from_path(
 # )
 
 # TODO-REFERENCE originally from alignment.ipynb
-import gensim
 # Load fasttext-wiki-news-subwords-300 pretrained model
-fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load('model/fasttext-wiki-news-subwords-300.model', mmap='r')
+fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load(
+    'model/fasttext-wiki-news-subwords-300.model', mmap='r'
+)
 
 # # TODO-REFERENCE originally from alignment.ipynb
 # import spacy
@@ -57,55 +59,100 @@ print('=== FINISHED NLP MODEL IMPORTS ===')
 # Flask-specific code...
 app = Flask(__name__)
 
-@app.route('/api', methods=['GET'])
-def api():
-	# retrieve arguments
-	try:
-		# arg_id = int(request.args['id'])
-		arg_input = request.args['input'].split('\n') if ('input' in request.args) else ['default']
-	except:
-		return {'error':'improperly formatted or missing arguments','traceback':f'{traceback.format_exc()}'}
-	print('arg_input:', arg_input)
-	if path.isfile(f'testcases/{arg_input[0]}/a.json'):
-		# TODO temporary - read the temp data file
-		print('=== READING FILE FROM DISK AS IT EXISTS!!!: ===')
-		print(f'testcases/{arg_input[0]}/a.json')
-		with open(f'testcases/{arg_input[0]}/a.json') as f:
-			data = json.load(f)
-	else:
-		print('=== WRITING DATA DIRECTLY IN AS ALIGNMENT DATA: ===')
-		data = {}
-		# retrieve the constituency parse information
-		data['parse_constituency'] = dict(zip(
-			range(len(arg_input)),
-			[alignment.parse_constituency(constituency_predictor, p) for p in arg_input]
-		))
-		# build the raw input df that the alignment and search algorithms build on top of...
-		input_df_dict = {}
-		for txt_id in data['parse_constituency']:
-			tokens = []
-			for token_i in range(len(data['parse_constituency'][txt_id]['tokens'])):
-				tokens.append(
-					(
-						data['parse_constituency'][txt_id]['tokens'][token_i],
-						'',
-						[data['parse_constituency'][txt_id]['pos_tags'][token_i]],
-					)
-				)
-			input_df_dict[txt_id] = tokens
-		input_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
-		input_df = input_df.applymap(lambda x: ('', '', []) if (x is None) else x)
-		input_df.columns = [f'txt{i}' for i in range(len(input_df.columns))]
-		# align the texts!
-		align_df = input_df.loc[[0]]
-		for i in range(1, len(input_df)):
-			align_df, align_df_score = alignment.alignRowMajorLocal(
-				align_df,
-				input_df.loc[[i]],
-				embed_model=fasttext
-			)
-		# convert the final alignment output to an outputtable format
-		data['alignment'] = alignment.alignment_to_jsondict(align_df)['alignment']
-	data['temp_arg_input'] = arg_input
-	# build output
-	return data
+
+@app.route('/api/textalign', methods=['GET'])
+def api_textalign():
+    print('... called /api/textalign ...')
+    # retrieve arguments
+    try:
+        # arg_id = int(request.args['id'])
+        # arg_input = request.args['input'].split('\n') if ('input' in request.args) else ['default']
+        arg_input = request.args['input'].split('\n')
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback': f'{traceback.format_exc()}'
+        }
+    # TODO this handles a single line of input poorly
+    data = {}
+    # retrieve the constituency parse information
+    data['parse_constituency'] = dict(zip(
+        range(len(arg_input)),
+        [alignment.parse_constituency(constituency_predictor, p) for p in arg_input]
+    ))
+    # build the raw input df that the alignment and search algorithms build on top of...
+    input_df_dict = {}
+    for txt_id in data['parse_constituency']:
+        tokens = []
+        for token_i in range(len(data['parse_constituency'][txt_id]['tokens'])):
+            tokens.append((
+                data['parse_constituency'][txt_id]['tokens'][token_i],
+                '',
+                [data['parse_constituency'][txt_id]['pos_tags'][token_i]],
+            ))
+        input_df_dict[txt_id] = tokens
+    input_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
+    input_df = input_df.applymap(lambda x: ('', '', []) if (x is None) else x)
+    input_df.columns = [f'txt{i}' for i in range(len(input_df.columns))]
+    # align the texts!
+    align_df = input_df.loc[[0]]
+    for i in range(1, len(input_df)):
+        align_df, align_df_score = alignment.alignRowMajorLocal(
+            align_df,
+            input_df.loc[[i]],
+            embed_model=fasttext
+        )
+    # convert the final alignment output to an outputtable format
+    data['alignment'] = alignment.alignment_to_jsondict(align_df)['alignment']
+    data['temp_arg_input'] = arg_input
+    # build output
+    return data
+
+
+@app.route('/api/alignop/canshift', methods=['GET'])
+def api_alignop_canshift():
+    print('... called /api/alignop/canshift ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+        arg_row = int(request.args['row'])
+        arg_col = int(request.args['col'])
+        arg_shiftdist = int(request.args['shift_dist'])
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignment.jsondict_to_alignment(arg_alignment)
+    result_canshift = alignment.canShiftCells(
+        align_df,
+        shift_rows=[arg_row],
+        shift_col=f'txt{arg_col}',
+        shift_distance=arg_shiftdist,
+        shift_size=1
+    )
+    return {'is_legal': result_canshift}
+
+
+@app.route('/api/alignop/shift', methods=['GET'])
+def api_alignop_shift():
+    print('... called /api/alignop/shift ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+        arg_row = int(request.args['row'])
+        arg_col = int(request.args['col'])
+        arg_shiftdist = int(request.args['shift_dist'])
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignment.jsondict_to_alignment(arg_alignment)
+    align_df = alignment.shiftCells(
+        align_df,
+        shift_rows=[arg_row],
+        shift_col=f'txt{arg_col}',
+        shift_distance=arg_shiftdist,
+    )
+    return alignment.alignment_to_jsondict(align_df)

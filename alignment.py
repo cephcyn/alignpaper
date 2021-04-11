@@ -333,4 +333,74 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     return output.applymap(lambda x: ('', '', []) if x is np.nan else x), np.amax(scores, axis=None)
 
 # TODO-IMPORT column splitting from alignment.ipynb ?
+
 # TODO-IMPORT column merging from alignment.ipynb ?
+
+# Return true iff the specified shift can occur without causing text collisions
+# TODO-REFERENCE originally from alignment.ipynb
+def canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size):
+    # remove duplicates
+    shift_rows = list(set(shift_rows))
+    # check that the selected segment starting point(s) exist
+    if not all([(e in src_alignment.index) for e in shift_rows]):
+        return False
+    if shift_col not in src_alignment.columns:
+        return False
+    # get the index numbers we are working with
+    colindex_start = list(src_alignment.columns).index(shift_col)
+    # check that the entire selected segment is contained within the alignment
+    if colindex_start + shift_size >= len(src_alignment.columns):
+        return False
+    # check that the proposed shift is contained within the alignment
+    if (colindex_start + shift_distance) < 0 or (colindex_start + shift_distance) >= len(src_alignment.columns):
+        return False
+    if (colindex_start + (shift_size-1) + shift_distance) < 0 or (colindex_start + (shift_size-1) + shift_distance) >= len(src_alignment.columns):
+        return False
+    # check that the alignment segment(s) is entirely text and does not contain whitespace
+    if any([any([len(e[0].strip())==0 for e in src_alignment.loc[shift_row][colindex_start:colindex_start+shift_size]]) for shift_row in shift_rows]):
+        return False
+    # if the shift distance is 0, it always works (although it's a very useless shift)
+    if shift_distance==0:
+        return True
+    # figure out if the shift collides with any other text for each of the rows we want to shift
+    for shift_row in shift_rows:
+        if shift_distance > 0:
+            can_reach = [
+                i for i
+                in range(colindex_start+shift_size, min(len(src_alignment.loc[shift_row]), colindex_start+shift_size+shift_distance))
+            ]
+        elif shift_distance < 0:
+            can_reach = [
+                i for i
+                in reversed(range(max(0, colindex_start+shift_distance), colindex_start))
+            ]
+        can_reach = [(i, src_alignment.loc[shift_row][i][0].strip()=='') for i in can_reach]
+        # check whether we should continue with the shift
+        if not all([e[1] for e in can_reach]):
+            return False
+    return True
+
+# Shifts the specified cells in an alignment
+# If it is impossible to shift the cells as specified, throws a ValueError
+# TODO-REFERENCE originally from alignment.ipynb
+def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=1, emptycell=('','',[]), debug_print=False):
+    if debug_print:
+        print(f'shift rows {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over')
+    # check if it's possible to shift
+    if not canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size):
+        raise ValueError('impossible to shift with given parameters: '
+                         + f'(shift row {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over)')
+    # initialize the alignment table copy we'll be working with
+    result = src_alignment.copy()
+    # get the index numbers we are working with
+    colindex_start = list(result.columns).index(shift_col)
+    for shift_row in shift_rows:
+        # grab the old contents
+        clipboard = [e for e in result.loc[shift_row][colindex_start:colindex_start+shift_size]]
+        # replace old contents with empty tuples
+        for i in range(colindex_start, colindex_start+shift_size):
+            result.loc[shift_row][i] = emptycell
+        # put old content in its destination location
+        for i in range(len(clipboard)):
+            result.loc[shift_row][colindex_start+shift_distance+i] = clipboard[i]
+    return result # removeEmptyColumns(result)

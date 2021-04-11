@@ -3,18 +3,77 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-class AlignmentTable extends React.Component {
+class ShiftButton extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      could_shift: false
+    };
     this.shiftButton = this.shiftButton.bind(this);
+  }
+
+  componentDidMount() {
+    // set whether this shift button is enabled or not
+    fetch("/api/alignop/canshift?"+new URLSearchParams({
+        alignment: JSON.stringify(this.props.data),
+        row: this.props.rownum,
+        col: this.props.colnum,
+        shift_dist: this.props.direction,
+      }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.setState({ could_shift: data.is_legal });
+      });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.data !== prevProps.data) {
+      this.componentDidMount();
+    }
   }
 
   shiftButton(e) {
     e.preventDefault();
     console.log("Shift button clicked!");
     console.log(e);
+    fetch("/api/alignop/shift?"+new URLSearchParams({
+        alignment: JSON.stringify(this.props.data),
+        row: this.props.rownum,
+        col: this.props.colnum,
+        shift_dist: this.props.direction,
+      }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
   }
 
+  render() {
+    // console.log("rerendering ShiftButton =========");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    let text;
+    if (this.props.direction === -1) {
+      text = "<"; // &lt;
+    } else {
+      text = ">"; // &gt;
+    }
+
+    return (
+      <button
+        disabled={!this.state.could_shift}
+        onClick={this.shiftButton}>
+          {text}
+      </button>)
+  }
+}
+
+class AlignmentTable extends React.Component {
   render() {
     console.log("rerendering AlignmentTable =========");
     console.log("props:", this.props);
@@ -25,9 +84,21 @@ class AlignmentTable extends React.Component {
         const cols = row.txt.map((cell, index) => {
           return (
             <td key={index}>
-              <button onClick={this.shiftButton}>&lt;</button>
+              <ShiftButton
+                data={this.props.data}
+                rownum={row.id}
+                colnum={index}
+                direction={-1}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
               {cell.join(' ')}
-              <button onClick={this.shiftButton}>&gt;</button>
+              <ShiftButton
+                data={this.props.data}
+                rownum={row.id}
+                colnum={index}
+                direction={1}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
             </td>
           );
         });
@@ -58,14 +129,20 @@ class App extends React.Component {
       inputvalue: "",
       loading: false,
     };
-    this.handleChange = this.handleChange.bind(this);
+    this.handleTextChange = this.handleTextChange.bind(this);
+    this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
+    this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
   }
 
-  componentDidMount() {}
-
-  handleChange(e) {
+  handleTextChange(e) {
     this.setState({inputvalue: e.target.value});
+  }
+
+  handleAlignmentChange(e) {
+    console.log("in handleAlignmentChange");
+    console.log(e);
+    this.setState({alignment: e.alignment});
   }
 
   alignRawText(e) {
@@ -75,7 +152,7 @@ class App extends React.Component {
     console.log("value=");
     console.log(this.state.inputvalue);
     this.setState({ loading: true });
-    fetch(this.props.apiUrl+new URLSearchParams({
+    fetch("/api/textalign?"+new URLSearchParams({
       input: this.state.inputvalue,
       // id: "3",
     }))
@@ -86,6 +163,12 @@ class App extends React.Component {
         this.setState({ loading: false });
         this.setState(data);
       });
+  }
+
+  buttonDoesNothing(e) {
+    e.preventDefault();
+    console.log("nothing button clicked!");
+    console.log(e);
   }
 
   render() {
@@ -104,17 +187,24 @@ class App extends React.Component {
     // only render alignment if there's content
     let aligntable;
     if (this.state.alignment.length > 0) {
-      aligntable = <AlignmentTable data={this.state.alignment} />
+      aligntable = <AlignmentTable
+        data={this.state.alignment}
+        onAlignmentChange={this.handleAlignmentChange}
+      />
     } else {
       aligntable = <br />
     }
 
     return (
       <div className="App">
-        <textarea value={this.state.inputvalue} onChange={this.handleChange} className="raw-input" />
+        <textarea
+          value={this.state.inputvalue}
+          onChange={this.handleTextChange}
+          className="raw-input"
+        />
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
-        <button>This Button Does Nothing</button>
+        <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <hr />
         {aligntable}
         {spinner}
