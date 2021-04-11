@@ -349,7 +349,7 @@ def canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_si
     # get the index numbers we are working with
     colindex_start = list(src_alignment.columns).index(shift_col)
     # check that the entire selected segment is contained within the alignment
-    if colindex_start + shift_size >= len(src_alignment.columns):
+    if colindex_start + shift_size > len(src_alignment.columns):
         return False
     # check that the proposed shift is contained within the alignment
     if (colindex_start + shift_distance) < 0 or (colindex_start + shift_distance) >= len(src_alignment.columns):
