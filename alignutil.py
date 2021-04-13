@@ -1,5 +1,6 @@
 import warnings
 import math
+import traceback
 from nltk.metrics import edit_distance
 import numpy as np
 import pandas as pd
@@ -404,3 +405,265 @@ def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=
         for i in range(len(clipboard)):
             result.loc[shift_row][colindex_start+shift_distance+i] = clipboard[i]
     return result # removeEmptyColumns(result)
+
+# calculate total column count
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreNumColumns(align_df):
+    return len(align_df.columns)
+
+# calculate how much we should care about different terms in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def alignmentTermWeights(align_df, sp, all_stopwords=None, priority_pos=['NN', 'NNS', 'NNP', 'JJ', 'RB']):
+    # input argument sp: spacy model (default should be sp = spacy.load('en_core_web_sm'))
+    if all_stopwords is None:
+        all_stopwords = sp.Defaults.stop_words
+    # collect list forms of words and cPOS
+    all_text = [
+        [text for text in extractTup(align_df.iloc[rownum], tup_i='segment', is_frame=False)]
+        for rownum in range(len(align_df))
+    ]
+    all_text = [' '.join(sublist).split() for sublist in all_text]
+    all_cpos = [
+        [text for sublist
+         in extractTup(align_df.iloc[rownum], tup_i='cpos', is_frame=False)
+         for text in sublist]
+        for rownum in range(len(align_df))
+    ]
+    # get count of how many rows each word is present in
+    tokens_df = dict([
+        (word, sum([(word in row) for row in all_text]))
+        for word
+        in set([item for sublist in all_text for item in sublist])
+        if word not in all_stopwords
+    ])
+    # remove the words that show up in at most one row
+    for word in [word for word in tokens_df if tokens_df[word] <= 1]:
+        discard = tokens_df.pop(word, None)
+    # flatten the word and cPOS lists
+    all_text = [e for sublist in all_text for e in sublist]
+    all_cpos = [e for sublist in all_cpos for e in sublist if e != '']
+    # count up how many POS is assigned to each word
+    pos_mapping = {}
+    for i in range(len(all_text)):
+        if all_text[i] not in pos_mapping:
+            pos_mapping[all_text[i]] = {}
+        if all_cpos[i] not in pos_mapping[all_text[i]]:
+            pos_mapping[all_text[i]][all_cpos[i]] = 0
+        pos_mapping[all_text[i]][all_cpos[i]] += 1
+    # pick the single POS that each word is tagged as most often
+    for word in pos_mapping:
+        max_pos = None
+        max_count = 0
+        for pos in pos_mapping[word]:
+            if pos_mapping[word][pos] > max_count:
+                max_pos = pos
+                max_count = pos_mapping[word][pos]
+        pos_mapping[word] = max_pos
+    # exponentiate the count of all of the words in the dict that are in POS classes we care about
+    for word in tokens_df:
+        if any([(pos in pos_mapping[word]) for pos in priority_pos]):
+            tokens_df[word] = pow(tokens_df[word], 2)
+    return tokens_df
+
+# calculate a subscore for how many columns are represented in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreColumnRepresentation(align_df, colname):
+    # Count the fraction of rows that are represented in the column (so penalizes gaps)
+    tokens = [text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)]
+    non_empty_count = len([text for text in tokens if text.strip() != ''])
+    return non_empty_count/len(tokens)
+
+# calculate a subscore for how many tokens there are in a column in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreColumnTotalTokens(align_df, colname):
+    # Count the number of words (including repeats) in each column
+    tokens = [text.split(' ') for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)]
+    tokens = [e for sublist in tokens for e in sublist if e!='']
+    return len(tokens)
+
+# calculate a subscore for how many columns are filled in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreNumFilledColumns(align_df):
+    # empty columns don't count, so discount those...
+    contents = [align_df[colname] for colname in align_df.columns]
+    contents = [len([cell[0] for cell in t if cell[0].strip()!='']) for t in contents]
+    contents = [(1 if t>0 else 0) for t in contents]
+    return sum(contents)
+
+# calculate a subscore for the word vector embed variance per column in an alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreColumnPhraseEmbedVariance(align_df, colname, embed_model):
+    # Compute embeddings variance of all the phrases for a single column
+    texts = [text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)]
+    # take the set of row texts
+    texts = list(set(texts))
+    # build up the list of text embeds for the texts that we *can* compute an embed for
+    text_embeds = []
+    for word in texts:
+        try:
+            text_embeds.append(get_phrase_embed(embed_model, word).drop('word', 1))
+        except:
+            pass
+    if len(text_embeds) > 1:
+        output = pd.concat(text_embeds)
+        # Reasoning for this operation (calculating variance as trace(covariance matrix) ...):
+        # https://stats.stackexchange.com/questions/225434/a-measure-of-variance-from-the-covariance-matrix
+        # This is equivalent to calculating the expected Euclidean distance of each element from the mean
+        result = np.trace(output.cov())
+    else:
+        # one of two scenarios:
+        # 1. all of the contents of this column aren't considered words, so, pretend they're all the same
+        # 2. there is only one row in this column that contains text, so it has no variation
+        # TODO is there a theoretically better way to handle them?
+        result = 0
+    return result
+
+# calculate a subscore for how many unique tokens there are per column in an alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreColumnTokenCount(align_df, colname):
+    # TODO normalize this
+    # Count the number of unique tokens in a single column
+    # capture each cell text
+    tokens = [
+        text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)
+        if text.strip() != ''
+    ]
+    # split it into tokens
+    tokens = [text.split() for text in tokens]
+    # flatten
+    return len(set([token for sublist in tokens for token in sublist]))
+
+# calculate a subscore for how many unique entities there are per column in an alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreColumnTokenEntityCount(align_df, colname, scisp, scisp_linker):
+    # input argument scisp: scispacy model (default should be scisp = spacy.load('en_core_sci_sm'))
+    # input argument scisp_linker: scispacy model linker
+    # Count the number of unique entity types in a single column
+    types = [text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)
+             if text.strip() != '']
+    # process the texts through spacy and pick out entities
+    types = [scisp(text).ents for text in types]
+    # flatten the entities and put into a set
+    types = [[ent for ent in ents] for ents in types]
+    # get the UMLS mappings for each entity
+    types = [[ent._.umls_ents[0][0] for ent in sl if (len(ent)>0) and (len(ent._.umls_ents)>0)] for sl in types]
+    # get the TUI for each of these UMLS mappings
+    # An informal guide to all of the TUIs: https://gist.github.com/joelkuiper/4869d148333f279c2b2e
+    types_tui = [[scisp_linker.umls.cui_to_entity[ent].types for ent in sl] for sl in types]
+    # check for edge case where there's 0 UMLS tuis for something?
+    for sl in types_tui:
+        if any([len(e)<1 for e in sl]):
+            raise ValueError('<1 tui for a UMLS entity')
+    types_tui = [[e for sl in row for e in sl] for row in types_tui]
+    # TODO implement larger groupings of types / more general type groups...
+    # https://semanticnetwork.nlm.nih.gov/download/SemGroups.txt
+    # from https://semanticnetwork.nlm.nih.gov/
+    return len(set([e for sl in types for e in sl])), len(set([e for sl in types_tui for e in sl]))
+
+# calculate a subscore for how many columns a given term appears in in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreTermColumnCount(align_df, term):
+    # Count the number of columns that a certain phrase or term appears within
+    # TODO should this be a fraction instead? what would that imply?
+    # If it doesn't appear at all, returns 1 (TODO that might not be ideal?)
+    # TODO add support for regex patterns (eg numbers?)
+    tokens = [
+        [text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)]
+        for colname in align_df.columns
+    ]
+    tokens = [[e for e in col if (term.lower() in e.lower())] for col in tokens]
+    tokens = [col for col in tokens if len(col) != 0]
+    return max(1, len(tokens))
+
+# calculate a subscore for how many columns a given list of terms appear in in the alignment
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreTermListColumnCount(align_df, term_list, term_weights=None):
+    # if we don't have any terms to investigate, return 1 (default col count)
+    if len(term_list) == 0:
+        return 1
+    # by default, weight each term equally
+    if term_weights is None:
+        term_weights = [1]*len(term_list)
+    # And normalize the weights (assume that hasn't been done already)
+    tw_sum = sum(term_weights)
+    term_weights = [(tw/tw_sum) for tw in term_weights]
+    scores = [scoreTermColumnCount(align_df, term) for term in term_list]
+    return np.dot(scores, term_weights)
+
+# calculate an alignment overall score
+# TODO-REFERENCE originally from alignment.ipynb
+def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
+    # set default score weights...
+    if weight_components is None:
+        weight_components = np.array([0.2, 0.2, 1, 0, 0, 0])
+
+    # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
+    if max_row_length is None:
+        print('scoreAlignment: prefer having max_row_length input')
+        traceback.print_stack(limit=5)
+        max_row_length = max([len([e[0] for e in align_df.loc[i] if len(e[0])!=0]) for i in align_df.index])
+
+    # get term weights
+    if term_weight_func is None:
+        alignment_terms = alignmentTermWeights(align_df, sp=spacy_model)
+        term_list = list(alignment_terms)
+        weight_terms = list(alignment_terms.values())
+    weight_terms = [r/sum(weight_terms) for r in weight_terms] # normalize the weights
+
+    # get column weights
+    score_colalltokens = [scoreColumnRepresentation(align_df, colname) for colname in align_df.columns]
+#     score_colalltokens = [scoreColumnTotalTokens(align_df, colname) for colname in align_df.columns]
+#     score_colalltokens = [1 for colname in align_df.columns]
+    weight_columns = [r/sum(score_colalltokens) for r in score_colalltokens] # normalize the column weights
+
+    # get score components
+    score_numcolumns = scoreNumColumns(align_df)
+    score_numfilledcolumns = scoreNumFilledColumns(align_df)
+    score_colptxtembed = [scoreColumnPhraseEmbedVariance(align_df, colname, embed_model) for colname in align_df.columns]
+    score_coltokncount = [scoreColumnTokenCount(align_df, colname) for colname in align_df.columns]
+    raw_colentityscores = [
+        scoreColumnTokenEntityCount(align_df, colname, scisp=scispacy_model, scisp_linker=scispacy_linker)
+        for colname in align_df.columns
+    ]
+#     raw_colentityscores = [(0,0) for colname in align_df.columns] # cheap filler score - use if scispacy not imported properly
+    score_coltentcount = [s[0] for s in raw_colentityscores]
+    score_colttuicount = [s[1] for s in raw_colentityscores]
+    score_termcolcount = scoreTermListColumnCount(align_df, term_list, weight_terms)
+
+    # put score components into a df of their own that is neatly readable for debug purposes
+    rawscores = pd.DataFrame([
+        # text embed vector variance; lower is better
+        score_colptxtembed,
+        # distinct tokens; lower is better
+        score_coltokncount,
+        # varying distinct entity TUIs; lower is better
+        score_colttuicount,
+        # the weighting we are giving each column; higher means more attention
+        weight_columns,
+    ], index=[
+        'embed variance',
+        'unique tokens (var)',
+        'unique entity TUI (var)',
+        'relevance (numtokens)',
+    ])
+    rawscores = rawscores.rename(columns=dict(zip(rawscores.columns, align_df.columns)))
+
+    # apply column weights to the score components
+    components = np.array([
+        # number of columns; lower is better
+        -1 * math.pow((score_numcolumns / max_row_length), 1),
+        # number of filled columns; lower is better
+        -1 * math.pow((score_numfilledcolumns / max_row_length), 1),
+        # text embed vector variance; lower is better
+        -1 * np.dot([math.pow(s, 2) for s in score_colptxtembed], weight_columns),
+        # varying distinct tokens; lower is better
+        -1 * np.dot(score_coltokncount, weight_columns),
+        # varying distinct entity TUIs; lower is better
+        -1 * np.dot(score_colttuicount, weight_columns),
+        # column count of terms used; lower is better
+        -1 * score_termcolcount,
+    ])
+    # apply score component weights (higher total score is better)
+    bias = 5
+    singlescore = bias + np.dot(weight_components, components)
+    return singlescore, components, rawscores

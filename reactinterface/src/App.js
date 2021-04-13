@@ -13,6 +13,7 @@ class ShiftButton extends React.Component {
   }
 
   componentDidMount() {
+    this.setState({ could_shift: false });
     // set whether this shift button is enabled or not
     fetch("/api/alignop/canshift?"+new URLSearchParams({
         alignment: JSON.stringify(this.props.data),
@@ -36,8 +37,8 @@ class ShiftButton extends React.Component {
 
   shiftButton(e) {
     e.preventDefault();
-    console.log("Shift button clicked!");
-    console.log(e);
+    // console.log("Shift button clicked!");
+    // console.log(e);
     fetch("/api/alignop/shift?"+new URLSearchParams({
         alignment: JSON.stringify(this.props.data),
         row: this.props.rownum,
@@ -75,9 +76,9 @@ class ShiftButton extends React.Component {
 
 class AlignmentTable extends React.Component {
   render() {
-    console.log("rerendering AlignmentTable =========");
-    console.log("props:", this.props);
-    console.log("state:", this.state);
+    // console.log("rerendering AlignmentTable =========");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
 
     const rows = this.props.data.map(
       (row) => {
@@ -132,6 +133,8 @@ class App extends React.Component {
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
+    this.alignmentScore = this.alignmentScore.bind(this);
+    this.alignmentSearch = this.alignmentSearch.bind(this);
     this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
   }
 
@@ -140,8 +143,6 @@ class App extends React.Component {
   }
 
   handleAlignmentChange(e) {
-    console.log("in handleAlignmentChange");
-    console.log(e);
     this.setState({alignment: e.alignment});
   }
 
@@ -163,6 +164,29 @@ class App extends React.Component {
         this.setState({ loading: false });
         this.setState(data);
       });
+  }
+
+  alignmentScore(e) {
+    e.preventDefault();
+    console.log("alignment score button clicked!");
+    console.log(e);
+    this.setState({ loading: true });
+    fetch("/api/alignscore?"+new URLSearchParams({
+      alignment: JSON.stringify(this.state.alignment),
+    }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.setState({ loading: false });
+        this.setState(data);
+      });
+  }
+
+  alignmentSearch(e) {
+    e.preventDefault();
+    console.log("alignment search button clicked!");
+    console.log(e);
   }
 
   buttonDoesNothing(e) {
@@ -204,13 +228,18 @@ class App extends React.Component {
         />
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
+        <button onClick={this.alignmentScore}>Alignment Score</button>
+        <button onClick={this.alignmentSearch}>Alignment Search</button>
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <hr />
         {aligntable}
         {spinner}
         <hr />
-        <p>temp_arg_input is...</p>
-        <p>{this.state.temp_arg_input ? this.state.temp_arg_input.toString() : 'Undefined'}</p>
+        <p>alignment_score is...</p>
+        <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
+        <hr />
+        <p>alignment_rawtext is...</p>
+        <p>{this.state.alignment_rawtext ? this.state.alignment_rawtext.toString() : 'Undefined'}</p>
         <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>

@@ -9,7 +9,7 @@ from os import path
 import pandas as pd
 import numpy as np
 
-import alignment
+import alignutil
 
 # NLP model imports...
 print('=== STARTING NLP MODEL IMPORTS ===')
@@ -47,12 +47,12 @@ fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load(
 )
 
 # # TODO-REFERENCE originally from alignment.ipynb
-# import spacy
-# sp = spacy.load('en_core_web_sm')
-# import scispacy
-# from scispacy.linking import EntityLinker
-# scisp = spacy.load('en_core_sci_sm')
-# linker = scisp.add_pipe('scispacy_linker', config={'resolve_abbreviations': True, 'linker_name': 'umls'})
+import spacy
+sp = spacy.load('en_core_web_sm')
+import scispacy
+from scispacy.linking import EntityLinker
+scisp = spacy.load('en_core_sci_sm')
+linker = scisp.add_pipe('scispacy_linker', config={'resolve_abbreviations': True, 'linker_name': 'umls'})
 
 print('=== FINISHED NLP MODEL IMPORTS ===')
 
@@ -74,21 +74,21 @@ def api_textalign():
             'traceback': f'{traceback.format_exc()}'
         }
     # TODO this handles a single line of input poorly
-    data = {}
+    output = {}
     # retrieve the constituency parse information
-    data['parse_constituency'] = dict(zip(
+    output['parse_constituency'] = dict(zip(
         range(len(arg_input)),
-        [alignment.parse_constituency(constituency_predictor, p) for p in arg_input]
+        [alignutil.parse_constituency(constituency_predictor, p) for p in arg_input]
     ))
     # build the raw input df that the alignment and search algorithms build on top of...
     input_df_dict = {}
-    for txt_id in data['parse_constituency']:
+    for txt_id in output['parse_constituency']:
         tokens = []
-        for token_i in range(len(data['parse_constituency'][txt_id]['tokens'])):
+        for token_i in range(len(output['parse_constituency'][txt_id]['tokens'])):
             tokens.append((
-                data['parse_constituency'][txt_id]['tokens'][token_i],
+                output['parse_constituency'][txt_id]['tokens'][token_i],
                 '',
-                [data['parse_constituency'][txt_id]['pos_tags'][token_i]],
+                [output['parse_constituency'][txt_id]['pos_tags'][token_i]],
             ))
         input_df_dict[txt_id] = tokens
     input_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
@@ -97,16 +97,16 @@ def api_textalign():
     # align the texts!
     align_df = input_df.loc[[0]]
     for i in range(1, len(input_df)):
-        align_df, align_df_score = alignment.alignRowMajorLocal(
+        align_df, align_df_score = alignutil.alignRowMajorLocal(
             align_df,
             input_df.loc[[i]],
             embed_model=fasttext
         )
     # convert the final alignment output to an outputtable format
-    data['alignment'] = alignment.alignment_to_jsondict(align_df)['alignment']
-    data['temp_arg_input'] = arg_input
+    output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
+    output['alignment_rawtext'] = arg_input
     # build output
-    return data
+    return output
 
 
 @app.route('/api/alignop/canshift', methods=['GET'])
@@ -123,8 +123,8 @@ def api_alignop_canshift():
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
         }
-    align_df = alignment.jsondict_to_alignment(arg_alignment)
-    result_canshift = alignment.canShiftCells(
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    result_canshift = alignutil.canShiftCells(
         align_df,
         shift_rows=[arg_row],
         shift_col=f'txt{arg_col}',
@@ -148,11 +148,34 @@ def api_alignop_shift():
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
         }
-    align_df = alignment.jsondict_to_alignment(arg_alignment)
-    align_df = alignment.shiftCells(
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    align_df = alignutil.shiftCells(
         align_df,
         shift_rows=[arg_row],
         shift_col=f'txt{arg_col}',
         shift_distance=arg_shiftdist,
     )
-    return alignment.alignment_to_jsondict(align_df)
+    return alignutil.alignment_to_jsondict(align_df)
+
+
+@app.route('/api/alignscore', methods=['GET'])
+def api_alignscore():
+    print('... called /api/alignscore ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    return {'alignment_score': singlescore}
