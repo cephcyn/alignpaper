@@ -187,6 +187,17 @@ class App extends React.Component {
     e.preventDefault();
     console.log("alignment search button clicked!");
     console.log(e);
+    this.setState({ loading: true });
+    fetch("/api/alignsearch?"+new URLSearchParams({
+      alignment: JSON.stringify(this.state.alignment),
+    }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.setState({ loading: false });
+        this.setState(data);
+      });
   }
 
   buttonDoesNothing(e) {

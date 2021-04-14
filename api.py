@@ -179,3 +179,27 @@ def api_alignscore():
         # max_row_length=max_row_length,
     )
     return {'alignment_score': singlescore}
+
+
+@app.route('/api/alignsearch', methods=['GET'])
+def api_alignsearch():
+    print('... called /api/alignsearch ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    greedystep_df, greedystep_score, greedystep_operation = alignutil.searchGreedyStep(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    print('greedy step chose', greedystep_operation)
+    return alignutil.alignment_to_jsondict(greedystep_df)

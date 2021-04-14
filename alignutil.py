@@ -667,3 +667,61 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     bias = 5
     singlescore = bias + np.dot(weight_components, components)
     return singlescore, components, rawscores
+
+# calculate the score of all greedy steps within constraints we could take
+def searchGreedyStep(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
+    # calculate the step (alignment operation) space...
+    valid_operations = []
+    valid_operations += [('none', 0)]
+    # add shift steps
+    for col_i in range(len(align_df.columns)):
+        # get all valid clumps of rows in the column
+        col_texts = [
+            e for e in zip([e[0]
+            for e in align_df[align_df.columns[col_i]]], align_df.index)
+            if len(e[0])!=0
+        ]
+        row_clumps = {}
+        for col_word in set([e[0] for e in col_texts]):
+            row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
+        # calculate all possible shifts for each clump of rows
+        for row_clump_word in row_clumps:
+            for distance in range(-1 * len(align_df.columns), len(align_df.columns)):
+                if distance != 0 and canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, 1):
+                    valid_operations += [
+                        ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
+                    ]
+    print(valid_operations)
+    # run through all of the operations and calculate what their result would be!
+    candidates = []
+    operation_i = 1
+    for selected_operation in valid_operations:
+        if selected_operation[0]=='shift':
+            operated = shiftCells(
+                align_df,
+                selected_operation[1],
+                selected_operation[2],
+                selected_operation[3],
+                shift_size=selected_operation[4],
+            )
+        # elif selected_operation[0]=='split':
+        #     operated = splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
+        # elif selected_operation[0]=='merge':
+        #     operated = mergeCol(align_df, selected_operation[1])
+        elif selected_operation[0]=='none':
+            operated = align_df
+        else:
+            raise ValueError('uh oh, undefined operation')
+        singlescore, components, rawscores = scoreAlignment(
+            operated,
+            spacy_model=spacy_model,
+            scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
+            embed_model=embed_model,
+            max_row_length=max_row_length,
+            # weight_components=weight_components
+        )
+        candidates.append((operated, singlescore, selected_operation))
+    # sort the result candidates by score, descending
+    candidates.sort(key=lambda x: -1 * x[1])
+    # and return the best candidate (operated, singlescore, selected_operation)
+    return candidates[0]
