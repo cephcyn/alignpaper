@@ -2,4 +2,6 @@ __pycache__/
 model/
 data/ebm_nlp_2_00*
 
+redis-stable/
+
 *.pkl
