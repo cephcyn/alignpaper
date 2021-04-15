@@ -19,3 +19,12 @@ td {
 .align-id {
   background-color: #ccc;
 }
+
+button.tight {
+  padding: 0px 5px;
+  margin: 0;
+  width: fit-content;
+  height: fit-content;
+  border: 1px solid #000;
+  border-radius: 5px;
+}

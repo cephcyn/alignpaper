@@ -406,6 +406,31 @@ def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=
             result.loc[shift_row][colindex_start+shift_distance+i] = clipboard[i]
     return result # removeEmptyColumns(result)
 
+# Insert a column into an alignment relative (before or after) to the specified column
+def insertColumn(src_alignment, insert_col, insert_after=True, emptycell=('','',[])):
+    # initialize the alignment table copy we'll be working with
+    result = src_alignment.copy()
+    # get the column index number we are working with
+    colindex = list(result.columns).index(insert_col)
+    # calculate column index based on whether we are inserting before or after
+    if insert_after:
+        colindex = colindex + 1
+    # perform the actual insert
+    result.insert(loc=colindex, column='newcol', value=[emptycell for i in range(len(result))])
+    # rename all of the columns...
+    result.columns = [f'txt{i}' for i in range(len(result.columns))]
+    return result
+
+# Delete the specified column from the alignment ... even if it has contents
+def deleteColumn(src_alignment, delete_col):
+    # initialize the alignment table copy we'll be working with
+    result = src_alignment.copy()
+    # perform the actual deletion
+    result = result.drop(columns=[delete_col])
+    # rename all of the columns...
+    result.columns = [f'txt{i}' for i in range(len(result.columns))]
+    return result
+
 # calculate total column count
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreNumColumns(align_df):
@@ -600,7 +625,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
     if max_row_length is None:
         print('scoreAlignment: prefer having max_row_length input')
-        traceback.print_stack(limit=5)
+        # traceback.print_stack(limit=5)
         max_row_length = max([len([e[0] for e in align_df.loc[i] if len(e[0])!=0]) for i in align_df.index])
 
     # get term weights

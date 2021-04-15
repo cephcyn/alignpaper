@@ -67,9 +67,81 @@ class ShiftButton extends React.Component {
 
     return (
       <button
+        class="tight"
         disabled={!this.state.could_shift}
         onClick={this.shiftButton}>
           {text}
+      </button>)
+  }
+}
+
+class InsertButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.insertButton = this.insertButton.bind(this);
+  }
+
+  insertButton(e) {
+    e.preventDefault();
+    console.log("Insert button clicked!");
+    console.log(e);
+    fetch("/api/alignop/insertcol?"+new URLSearchParams({
+        alignment: JSON.stringify(this.props.data),
+        col: this.props.colnum,
+        insertafter: true,
+      }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
+  }
+
+  render() {
+    // console.log("rerendering InsertButton =========");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    return (
+      <button
+        onClick={this.insertButton}>
+          Insert
+      </button>)
+  }
+}
+
+class DeleteButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.deleteButton = this.deleteButton.bind(this);
+  }
+
+  deleteButton(e) {
+    e.preventDefault();
+    console.log("Delete button clicked!");
+    console.log(e);
+    fetch("/api/alignop/deletecol?"+new URLSearchParams({
+        alignment: JSON.stringify(this.props.data),
+        col: this.props.colnum,
+      }))
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
+  }
+
+  render() {
+    // console.log("rerendering DeleteButton =========");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    return (
+      <button
+        onClick={this.deleteButton}>
+          Delete
       </button>)
   }
 }
@@ -98,6 +170,16 @@ class AlignmentTable extends React.Component {
                 rownum={row.id}
                 colnum={index}
                 direction={1}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
+              <InsertButton
+                data={this.props.data}
+                colnum={index}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
+              <DeleteButton
+                data={this.props.data}
+                colnum={index}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
             </td>

@@ -8,6 +8,8 @@ import json
 from os import path
 import pandas as pd
 import numpy as np
+import distutils
+import distutils.util
 
 import alignutil
 
@@ -67,7 +69,7 @@ def api_textalign():
     try:
         # arg_id = int(request.args['id'])
         # arg_input = request.args['input'].split('\n') if ('input' in request.args) else ['default']
-        arg_input = request.args['input'].split('\n')
+        arg_input = [e.strip() for e in request.args['input'].split('\n') if e.strip()!='']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -97,6 +99,8 @@ def api_textalign():
     # align the texts!
     align_df = input_df.loc[[0]]
     for i in range(1, len(input_df)):
+        print('sub-call to alignrowmajorlocal, current state')
+        print(align_df)
         align_df, align_df_score = alignutil.alignRowMajorLocal(
             align_df,
             input_df.loc[[i]],
@@ -154,6 +158,48 @@ def api_alignop_shift():
         shift_rows=[arg_row],
         shift_col=f'txt{arg_col}',
         shift_distance=arg_shiftdist,
+    )
+    return alignutil.alignment_to_jsondict(align_df)
+
+
+@app.route('/api/alignop/insertcol', methods=['GET'])
+def api_alignop_insertcol():
+    print('... called /api/alignop/insertcol ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+        arg_col = int(request.args['col'])
+        arg_insertafter = bool(distutils.util.strtobool(request.args['insertafter']))
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    align_df = alignutil.insertColumn(
+        align_df,
+        insert_col=f'txt{arg_col}',
+        insert_after=arg_insertafter,
+    )
+    return alignutil.alignment_to_jsondict(align_df)
+
+
+@app.route('/api/alignop/deletecol', methods=['GET'])
+def api_alignop_deletecol():
+    print('... called /api/alignop/deletecol ...')
+    # retrieve arguments
+    try:
+        arg_alignment = {'alignment': json.loads(request.args['alignment'])}
+        arg_col = int(request.args['col'])
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    align_df = alignutil.deleteColumn(
+        align_df,
+        delete_col=f'txt{arg_col}',
     )
     return alignutil.alignment_to_jsondict(align_df)
 
