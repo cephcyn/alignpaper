@@ -120,8 +120,9 @@ class InsertButton extends React.Component {
 
     return (
       <button
+        className="tight"
         onClick={this.insertButton}>
-          Insert
+          +
       </button>)
   }
 }
@@ -160,8 +161,9 @@ class DeleteButton extends React.Component {
 
     return (
       <button
+        className="tight"
         onClick={this.deleteButton}>
-          Delete
+          -
       </button>)
   }
 }
@@ -177,6 +179,8 @@ class AlignmentTable extends React.Component {
         const cols = row.txt.map((cell, index) => {
           return (
             <td key={index}>
+              {cell.join(' ')}
+              <br/>
               <ShiftButton
                 data={this.props.data}
                 rownum={row.id}
@@ -184,7 +188,6 @@ class AlignmentTable extends React.Component {
                 direction={-1}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
-              {cell.join(' ')}
               <ShiftButton
                 data={this.props.data}
                 rownum={row.id}
@@ -198,7 +201,6 @@ class AlignmentTable extends React.Component {
                 colnum={index}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
-              <br/>
               <DeleteButton
                 data={this.props.data}
                 colnum={index}
@@ -364,9 +366,6 @@ class App extends React.Component {
         <hr />
         <p>alignment_score is...</p>
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
-        <hr />
-        <p>alignment_rawtext is...</p>
-        <p>{this.state.alignment_rawtext ? this.state.alignment_rawtext.toString() : 'Undefined'}</p>
         <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>

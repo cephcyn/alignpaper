@@ -1,8 +1,8 @@
 import gensim
 import allennlp_models.tagging
 from allennlp.predictors.predictor import Predictor
-from flask import Flask
-from flask import request
+from flask import Flask, request
+from celery import Celery
 import traceback
 import json
 from os import path
@@ -15,53 +15,77 @@ import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-# NLP model imports...
-print('=== STARTING NLP MODEL IMPORTS ===')
-
-# # TODO-REFERENCE originally from analyze.ipynb
-# # For sentence tokenization
-# from nltk import tokenize
-
-# # TODO-REFERENCE originally from analyze.ipynb
-# # For coreference resolution
-# from allennlp.predictors.predictor import Predictor
-# import allennlp_models.coref
-# coref_predictor = Predictor.from_path(
-#     "https://storage.googleapis.com/allennlp-public-models/coref-spanbert-large-2021.03.10.tar.gz"
-# )
-
-# TODO-REFERENCE originally from analyze.ipynb
-# For constituency parsing
-constituency_predictor = Predictor.from_path(
-    "https://storage.googleapis.com/allennlp-public-models/elmo-constituency-parser-2020.02.10.tar.gz"
-)
-
-# # TODO-REFERENCE originally from analyze.ipynb
-# from allennlp.predictors.predictor import Predictor
-# import allennlp_models.structured_prediction
-# # For dependency parsing
-# dependency_predictor = Predictor.from_path(
-#     "https://storage.googleapis.com/allennlp-public-models/biaffine-dependency-parser-ptb-2020.04.06.tar.gz"
-# )
-
-# TODO-REFERENCE originally from alignment.ipynb
-# Load fasttext-wiki-news-subwords-300 pretrained model
-fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load(
-    'model/fasttext-wiki-news-subwords-300.model', mmap='r'
-)
-
-# # TODO-REFERENCE originally from alignment.ipynb
-import spacy
-sp = spacy.load('en_core_web_sm')
-import scispacy
-from scispacy.linking import EntityLinker
-scisp = spacy.load('en_core_sci_sm')
-linker = scisp.add_pipe('scispacy_linker', config={'resolve_abbreviations': True, 'linker_name': 'umls'})
-
-print('=== FINISHED NLP MODEL IMPORTS ===')
-
 # Flask-specific code...
 app = Flask(__name__)
+
+# # Configure Celery...
+# app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+# app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+# celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+# celery.conf.update(app.config)
+
+# initialize the top-level variables to None lmao
+coref_predictor = None
+constituency_predictor = None
+dependency_predictor = None
+fasttext = None
+sp = None
+scisp = None
+linker = None
+
+@app.before_first_request
+def before_first_request_setup():
+    # NLP model imports...
+    print('=== STARTING NLP MODEL IMPORTS ===')
+    global coref_predictor
+    global constituency_predictor
+    global dependency_predictor
+    global fasttext
+    global sp
+    global scisp
+    global linker
+
+    # # TODO-REFERENCE originally from analyze.ipynb
+    # # For sentence tokenization
+    # from nltk import tokenize
+
+    # # TODO-REFERENCE originally from analyze.ipynb
+    # # For coreference resolution
+    # from allennlp.predictors.predictor import Predictor
+    # import allennlp_models.coref
+    # coref_predictor = Predictor.from_path(
+    #     "https://storage.googleapis.com/allennlp-public-models/coref-spanbert-large-2021.03.10.tar.gz"
+    # )
+
+    # TODO-REFERENCE originally from analyze.ipynb
+    # For constituency parsing
+    constituency_predictor = Predictor.from_path(
+        "https://storage.googleapis.com/allennlp-public-models/elmo-constituency-parser-2020.02.10.tar.gz"
+    )
+
+    # # TODO-REFERENCE originally from analyze.ipynb
+    # from allennlp.predictors.predictor import Predictor
+    # import allennlp_models.structured_prediction
+    # # For dependency parsing
+    # dependency_predictor = Predictor.from_path(
+    #     "https://storage.googleapis.com/allennlp-public-models/biaffine-dependency-parser-ptb-2020.04.06.tar.gz"
+    # )
+
+    # TODO-REFERENCE originally from alignment.ipynb
+    # Load fasttext-wiki-news-subwords-300 pretrained model
+    fasttext = gensim.models.keyedvectors.FastTextKeyedVectors.load(
+        'model/fasttext-wiki-news-subwords-300.model', mmap='r'
+    )
+
+    # # TODO-REFERENCE originally from alignment.ipynb
+    # import spacy
+    # sp = spacy.load('en_core_web_sm')
+    # import scispacy
+    # from scispacy.linking import EntityLinker
+    # scisp = spacy.load('en_core_sci_sm')
+    # linker = scisp.add_pipe('scispacy_linker', config={'resolve_abbreviations': True, 'linker_name': 'umls'})
+
+    print('=== FINISHED NLP MODEL IMPORTS ===')
 
 
 @app.route('/api/textalign', methods=['POST'])
@@ -101,15 +125,14 @@ def api_textalign():
     # align the texts!
     align_df = input_df.loc[[0]]
     for i in range(1, len(input_df)):
-        print(f'sub-call {i}/{len(input_df)-1} to alignrowmajorlocal, starting from state: {align_df.shape}')
         align_df, align_df_score = alignutil.alignRowMajorLocal(
             align_df,
             input_df.loc[[i]],
             embed_model=fasttext
         )
+        print(f'aligned {i+1}/{len(input_df)}')
     # convert the final alignment output to an outputtable format
     output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
-    output['alignment_rawtext'] = arg_input
     return output
 
 

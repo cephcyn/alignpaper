@@ -1,4 +1,4 @@
-name: alignpaper
+name: alignpaper2
 channels:
   - conda-forge
   - defaults
@@ -16,7 +16,6 @@ dependencies:
   - pip=21.0.1
   - pytables=3.6.1
   - python=3.8.8
-  - redis=5.0.3
   - scipy=1.6.2
   - spacy=3.0.5
   - tensorflow=2.4.1
@@ -24,6 +23,7 @@ dependencies:
     - allennlp==2.2.0
     - allennlp-models==2.2.0
     - fastcluster==1.1.28
+    - redis==3.5.3
     - scikit-learn==0.24.1
     - scispacy==0.4.0
 prefix: /home/cephcyn/miniconda3/envs/alignpaper
