@@ -15,12 +15,17 @@ class ShiftButton extends React.Component {
   componentDidMount() {
     this.setState({ could_shift: false });
     // set whether this shift button is enabled or not
-    fetch("/api/alignop/canshift?"+new URLSearchParams({
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
         row: this.props.rownum,
         col: this.props.colnum,
         shift_dist: this.props.direction,
-      }))
+      })
+    };
+    fetch("/api/alignop/canshift", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -39,12 +44,17 @@ class ShiftButton extends React.Component {
     e.preventDefault();
     // console.log("Shift button clicked!");
     // console.log(e);
-    fetch("/api/alignop/shift?"+new URLSearchParams({
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
         row: this.props.rownum,
         col: this.props.colnum,
         shift_dist: this.props.direction,
-      }))
+      })
+    };
+    fetch("/api/alignop/shift", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -67,7 +77,7 @@ class ShiftButton extends React.Component {
 
     return (
       <button
-        class="tight"
+        className="tight"
         disabled={!this.state.could_shift}
         onClick={this.shiftButton}>
           {text}
@@ -85,11 +95,16 @@ class InsertButton extends React.Component {
     e.preventDefault();
     console.log("Insert button clicked!");
     console.log(e);
-    fetch("/api/alignop/insertcol?"+new URLSearchParams({
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
         col: this.props.colnum,
         insertafter: true,
-      }))
+      })
+    };
+    fetch("/api/alignop/insertcol", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -121,10 +136,15 @@ class DeleteButton extends React.Component {
     e.preventDefault();
     console.log("Delete button clicked!");
     console.log(e);
-    fetch("/api/alignop/deletecol?"+new URLSearchParams({
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
         col: this.props.colnum,
-      }))
+      })
+    };
+    fetch("/api/alignop/deletecol", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -172,11 +192,13 @@ class AlignmentTable extends React.Component {
                 direction={1}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
+              <br/>
               <InsertButton
                 data={this.props.data}
                 colnum={index}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
+              <br/>
               <DeleteButton
                 data={this.props.data}
                 colnum={index}
@@ -235,10 +257,12 @@ class App extends React.Component {
     console.log("value=");
     console.log(this.state.inputvalue);
     this.setState({ loading: true });
-    fetch("/api/textalign?"+new URLSearchParams({
-      input: this.state.inputvalue,
-      // id: "3",
-    }))
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({input: this.state.inputvalue})
+    };
+    fetch("/api/textalign", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -253,9 +277,14 @@ class App extends React.Component {
     console.log("alignment score button clicked!");
     console.log(e);
     this.setState({ loading: true });
-    fetch("/api/alignscore?"+new URLSearchParams({
-      alignment: JSON.stringify(this.state.alignment),
-    }))
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alignment: JSON.stringify(this.state.alignment),
+      })
+    };
+    fetch("/api/alignscore", requestOptions)
       .then((response) => {
         return response.json();
       })
@@ -270,9 +299,14 @@ class App extends React.Component {
     console.log("alignment search button clicked!");
     console.log(e);
     this.setState({ loading: true });
-    fetch("/api/alignsearch?"+new URLSearchParams({
-      alignment: JSON.stringify(this.state.alignment),
-    }))
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alignment: JSON.stringify(this.state.alignment),
+      })
+    };
+    fetch("/api/alignsearch", requestOptions)
       .then((response) => {
         return response.json();
       })
