@@ -58,6 +58,7 @@ def parse_constituency(constituency_predictor, phrase):
     p['hierplane_tree'].pop('nodeTypeToStyle', None)
     return p
 
+
 # Parse JSONable dict format into alignment DF
 # TODO-REFERENCE originally from alignment.ipynb
 def jsondict_to_alignment(alignment_dict):
@@ -75,6 +76,7 @@ def jsondict_to_alignment(alignment_dict):
     output_df.columns = [f'txt{i}' for i in range(len(output_df.columns))]
     return output_df
 
+
 # Parse alignment DF into JSONable dict format
 # TODO-REFERENCE originally from alignment.ipynb
 def alignment_to_jsondict(alignment_df):
@@ -89,6 +91,7 @@ def alignment_to_jsondict(alignment_df):
             row_obj['txt'].append([e for e in col[0].split(' ') if (e != '')])
         rows.append(row_obj)
     return {'alignment':rows}
+
 
 # Extract tuple data from alignment DF
 # TODO-REFERENCE originally from alignment.ipynb
@@ -107,6 +110,7 @@ def extractTup(data, tup_i=0, is_frame=True):
     else:
         return data.map(lambda x: x[tup_i])
 
+
 # Delete columns which are empty in all rows from alignment DF
 # TODO-REFERENCE originally from alignment.ipynb
 def removeEmptyColumns(align_df):
@@ -118,6 +122,7 @@ def removeEmptyColumns(align_df):
     output_df = align_df[output_columns]
     output_df.columns = [f'txt{i}' for i in range(len(output_df.columns))]
     return output_df
+
 
 # Get the embedding of a phrase
 # TODO-REFERENCE originally from alignment.ipynb
@@ -153,6 +158,7 @@ def get_phrase_embed(embed_model, phrase, remove_label=False, norm_zero_threshol
     if not remove_label:
         emb_avg['word'] = phrase
     return pd.DataFrame([emb_avg])
+
 
 # Create an alignment of two given alignment DFs
 # TODO-REFERENCE originally from alignment.ipynb
@@ -333,9 +339,12 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     output = output.append(realign_b)
     return output.applymap(lambda x: ('', '', []) if x is np.nan else x), np.amax(scores, axis=None)
 
+
 # TODO-IMPORT column splitting from alignment.ipynb ?
 
+
 # TODO-IMPORT column merging from alignment.ipynb ?
+
 
 # Return true iff the specified shift can occur without causing text collisions
 # TODO-REFERENCE originally from alignment.ipynb
@@ -381,6 +390,7 @@ def canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_si
             return False
     return True
 
+
 # Shifts the specified cells in an alignment
 # If it is impossible to shift the cells as specified, throws a ValueError
 # TODO-REFERENCE originally from alignment.ipynb
@@ -406,6 +416,7 @@ def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=
             result.loc[shift_row][colindex_start+shift_distance+i] = clipboard[i]
     return result # removeEmptyColumns(result)
 
+
 # Insert a column into an alignment relative (before or after) to the specified column
 def insertColumn(src_alignment, insert_col, insert_after=True, emptycell=('','',[])):
     # initialize the alignment table copy we'll be working with
@@ -421,6 +432,7 @@ def insertColumn(src_alignment, insert_col, insert_after=True, emptycell=('','',
     result.columns = [f'txt{i}' for i in range(len(result.columns))]
     return result
 
+
 # Delete the specified column from the alignment ... even if it has contents
 def deleteColumn(src_alignment, delete_col):
     # initialize the alignment table copy we'll be working with
@@ -431,10 +443,12 @@ def deleteColumn(src_alignment, delete_col):
     result.columns = [f'txt{i}' for i in range(len(result.columns))]
     return result
 
+
 # calculate total column count
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreNumColumns(align_df):
     return len(align_df.columns)
+
 
 # calculate how much we should care about different terms in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
@@ -490,6 +504,7 @@ def alignmentTermWeights(align_df, sp, all_stopwords=None, priority_pos=['NN', '
             tokens_df[word] = pow(tokens_df[word], 2)
     return tokens_df
 
+
 # calculate a subscore for how many columns are represented in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreColumnRepresentation(align_df, colname):
@@ -497,6 +512,7 @@ def scoreColumnRepresentation(align_df, colname):
     tokens = [text for text in extractTup(align_df[colname], tup_i='segment', is_frame=False)]
     non_empty_count = len([text for text in tokens if text.strip() != ''])
     return non_empty_count/len(tokens)
+
 
 # calculate a subscore for how many tokens there are in a column in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
@@ -506,6 +522,7 @@ def scoreColumnTotalTokens(align_df, colname):
     tokens = [e for sublist in tokens for e in sublist if e!='']
     return len(tokens)
 
+
 # calculate a subscore for how many columns are filled in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreNumFilledColumns(align_df):
@@ -514,6 +531,7 @@ def scoreNumFilledColumns(align_df):
     contents = [len([cell[0] for cell in t if cell[0].strip()!='']) for t in contents]
     contents = [(1 if t>0 else 0) for t in contents]
     return sum(contents)
+
 
 # calculate a subscore for the word vector embed variance per column in an alignment
 # TODO-REFERENCE originally from alignment.ipynb
@@ -543,6 +561,7 @@ def scoreColumnPhraseEmbedVariance(align_df, colname, embed_model):
         result = 0
     return result
 
+
 # calculate a subscore for how many unique tokens there are per column in an alignment
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreColumnTokenCount(align_df, colname):
@@ -557,6 +576,7 @@ def scoreColumnTokenCount(align_df, colname):
     tokens = [text.split() for text in tokens]
     # flatten
     return len(set([token for sublist in tokens for token in sublist]))
+
 
 # calculate a subscore for how many unique entities there are per column in an alignment
 # TODO-REFERENCE originally from alignment.ipynb
@@ -585,6 +605,7 @@ def scoreColumnTokenEntityCount(align_df, colname, scisp, scisp_linker):
     # from https://semanticnetwork.nlm.nih.gov/
     return len(set([e for sl in types for e in sl])), len(set([e for sl in types_tui for e in sl]))
 
+
 # calculate a subscore for how many columns a given term appears in in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreTermColumnCount(align_df, term):
@@ -600,6 +621,7 @@ def scoreTermColumnCount(align_df, term):
     tokens = [col for col in tokens if len(col) != 0]
     return max(1, len(tokens))
 
+
 # calculate a subscore for how many columns a given list of terms appear in in the alignment
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreTermListColumnCount(align_df, term_list, term_weights=None):
@@ -614,6 +636,7 @@ def scoreTermListColumnCount(align_df, term_list, term_weights=None):
     term_weights = [(tw/tw_sum) for tw in term_weights]
     scores = [scoreTermColumnCount(align_df, term) for term in term_list]
     return np.dot(scores, term_weights)
+
 
 # calculate an alignment overall score
 # TODO-REFERENCE originally from alignment.ipynb
@@ -692,6 +715,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     bias = 5
     singlescore = bias + np.dot(weight_components, components)
     return singlescore, components, rawscores
+
 
 # calculate the score of all greedy steps within constraints we could take
 def searchGreedyStep(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):

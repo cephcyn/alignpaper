@@ -64,7 +64,7 @@ class ShiftButton extends React.Component {
   }
 
   render() {
-    // console.log("rerendering ShiftButton =========");
+    // console.log("rerendering ShiftButton ..............");
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
@@ -114,7 +114,7 @@ class InsertButton extends React.Component {
   }
 
   render() {
-    // console.log("rerendering InsertButton =========");
+    // console.log("rerendering InsertButton ...........");
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
@@ -155,7 +155,7 @@ class DeleteButton extends React.Component {
   }
 
   render() {
-    // console.log("rerendering DeleteButton =========");
+    // console.log("rerendering DeleteButton .............");
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
@@ -170,7 +170,7 @@ class DeleteButton extends React.Component {
 
 class AlignmentTable extends React.Component {
   render() {
-    // console.log("rerendering AlignmentTable =========");
+    // console.log("rerendering AlignmentTable ..............");
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
@@ -241,6 +241,7 @@ class App extends React.Component {
     this.alignRawText = this.alignRawText.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
     this.alignmentSearch = this.alignmentSearch.bind(this);
+    this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
   }
 
@@ -269,8 +270,33 @@ class App extends React.Component {
         return response.json();
       })
       .then((data) => {
-        this.setState({ loading: false });
-        this.setState(data);
+        this.updateAlignmentProgress(data['location']);
+      });
+  }
+
+  updateAlignmentProgress(status_url) {
+    fetch(status_url)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        console.log('got update from server...');
+        console.log(data);
+        if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
+          if ('alignment' in data) {
+            this.setState({ parse_constituency: data['parse_constituency'] });
+            this.setState({ alignment: data['alignment'] });
+            this.setState({ loading: false });
+          } else {
+            this.setState({ alignment: [] });
+            this.setState({ loading: false });
+          }
+        } else {
+          // check back on the progress in 2 seconds...
+          setTimeout(() => {
+            this.updateAlignmentProgress(status_url);
+          }, 2000);
+        }
       });
   }
 
@@ -325,7 +351,7 @@ class App extends React.Component {
   }
 
   render() {
-    console.log("rerendering App =========", new Date());
+    console.log("rerendering App.......", new Date());
     console.log("props:", this.props);
     console.log("state:", this.state);
 
