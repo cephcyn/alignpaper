@@ -235,6 +235,7 @@ class App extends React.Component {
       alignment: [],
       inputvalue: "",
       loading: false,
+      loadingstatus: "",
     };
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
@@ -284,18 +285,23 @@ class App extends React.Component {
         console.log(data);
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
+            // success!
             this.setState({ parse_constituency: data['parse_constituency'] });
             this.setState({ alignment: data['alignment'] });
             this.setState({ loading: false });
+            this.setState({ loadingstatus: "" });
           } else {
+            // failure?
             this.setState({ alignment: [] });
             this.setState({ loading: false });
+            this.setState({ loadingstatus: data['status'] });
           }
         } else {
-          // check back on the progress in 2 seconds...
+          // check back on the progress every so often...
+          this.setState({ loadingstatus: data['status'] });
           setTimeout(() => {
             this.updateAlignmentProgress(status_url);
-          }, 2000);
+          }, 2000); // 2000 = 2000ms = 2 seconds
         }
       });
   }
@@ -355,12 +361,12 @@ class App extends React.Component {
     console.log("props:", this.props);
     console.log("state:", this.state);
 
-    // only render waiting spinner if we are currently waiting on the api
-    let spinner;
+    // only render loading indicator spinner if we are currently waiting on the api
+    let loadingspinner;
     if (this.state.loading) {
-      spinner = <p>Loading...</p>
+      loadingspinner = <p>Working... {this.state.loadingstatus}</p>
     } else {
-      spinner = <br/>
+      loadingspinner = <br/>
     }
 
     // only render alignment if there's content
@@ -388,7 +394,7 @@ class App extends React.Component {
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <hr />
         {aligntable}
-        {spinner}
+        {loadingspinner}
         <hr />
         <p>alignment_score is...</p>
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>

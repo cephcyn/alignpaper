@@ -126,7 +126,7 @@ def task_textalign(self, arg_input):
             meta={
                 'current': rows_aligned,
                 'total': rows_total,
-                'status': 'This is a placeholder text'
+                'status': f'Currently aligning... done ({rows_aligned}/{rows_total})'
             }
         )
         # print(f'aligned {rows_aligned}/{rows_total}')
