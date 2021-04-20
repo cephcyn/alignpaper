@@ -318,18 +318,8 @@ def api_alignscore():
     return jsonify({'alignment_score': singlescore})
 
 
-@app.route('/api/alignsearch', methods=['POST'])
-def api_alignsearch():
-    print('... called /api/alignsearch ...')
-    # retrieve arguments
-    request_args = request.get_json()
-    try:
-        arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-    except:
-        return {
-            'error': 'improperly formatted or missing arguments',
-            'traceback':f'{traceback.format_exc()}'
-        }
+@celery.task(bind=True)
+def task_alignsearch(self, arg_alignment):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary model variable names...
     spacy_model = sp
@@ -340,6 +330,14 @@ def api_alignsearch():
     term_weight_func=None
     weight_components=None
     # do the greedy step search ----
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            'current': 0,
+            'total': 0,
+            'status': 'Currently calculating operation space...'
+        }
+    )
     # calculate the step (alignment operation) space...
     valid_operations = []
     valid_operations += [('none', 0)]
@@ -362,9 +360,19 @@ def api_alignsearch():
                         ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
                     ]
     # print(valid_operations)
+    # initialize the progress variables
+    states_calculated = 0
+    states_total = len(valid_operations)
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            'current': states_calculated,
+            'total': states_total,
+            'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
+        }
+    )
     # run through all of the operations and calculate what their result would be!
     candidates = []
-    operation_i = 1
     for selected_operation in valid_operations:
         if selected_operation[0]=='shift':
             operated = alignutil.shiftCells(
@@ -391,11 +399,73 @@ def api_alignsearch():
             # weight_components=weight_components
         )
         candidates.append((operated, singlescore, selected_operation))
-        print(f'computed {operation_i}/{len(valid_operations)} operations')
-        operation_i += 1
+        states_calculated += 1
+        print(f'computed {states_calculated}/{states_total} operations')
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': states_calculated,
+                'total': states_total,
+                'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
+            }
+        )
     # sort the result candidates by score, descending
     candidates.sort(key=lambda x: -1 * x[1])
     # and pick the best candidate (operated, singlescore, selected_operation)
     greedystep_df, greedystep_score, greedystep_operation = candidates[0]
     print('greedy step chose', greedystep_operation)
-    return jsonify(alignutil.alignment_to_jsondict(greedystep_df))
+    return alignutil.alignment_to_jsondict(greedystep_df)
+
+
+@app.route('/status/alignsearch/<task_id>', methods=['GET'])
+def taskstatus_alignsearch(task_id):
+    # print('... called /status/alignsearch/<ID> ... ...')
+    task = task_alignsearch.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'alignment' in task.info:
+            response['alignment'] = task.info['alignment']
+    else:
+        # if we are in the failure state...
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
+
+
+@app.route('/api/alignsearch', methods=['POST'])
+def api_alignsearch():
+    # TODO refactor into celery task
+    print('... called /api/alignsearch ...')
+    # retrieve arguments
+    request_args = request.get_json()
+    try:
+        arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+    except:
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    task = task_alignsearch.apply_async(kwargs={
+        'arg_alignment':arg_alignment,
+    })
+    return jsonify({
+        'location': url_for('taskstatus_alignsearch', task_id=task.id)
+    }), 202

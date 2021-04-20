@@ -240,9 +240,10 @@ class App extends React.Component {
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
+    this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
     this.alignmentSearch = this.alignmentSearch.bind(this);
-    this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
+    this.updateSearchProgress = this.updateSearchProgress.bind(this);
     this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
   }
 
@@ -264,7 +265,9 @@ class App extends React.Component {
     const requestOptions = {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({input: this.state.inputvalue})
+      body: JSON.stringify({
+        input: this.state.inputvalue
+      })
     };
     fetch("/api/textalign", requestOptions)
       .then((response) => {
@@ -345,8 +348,37 @@ class App extends React.Component {
         return response.json();
       })
       .then((data) => {
-        this.setState({ loading: false });
-        this.setState(data);
+        this.updateAlignmentProgress(data['location']);
+      });
+  }
+
+  updateSearchProgress(status_url) {
+    fetch(status_url)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        console.log('got update from server...');
+        console.log(data);
+        if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
+          if ('alignment' in data) {
+            // success!
+            this.setState({ alignment: data['alignment'] });
+            this.setState({ loading: false });
+            this.setState({ loadingstatus: "" });
+          } else {
+            // failure?
+            this.setState({ alignment: [] });
+            this.setState({ loading: false });
+            this.setState({ loadingstatus: data['status'] });
+          }
+        } else {
+          // check back on the progress every so often...
+          this.setState({ loadingstatus: data['status'] });
+          setTimeout(() => {
+            this.updateSearchProgress(status_url);
+          }, 2000); // 2000 = 2000ms = 2 seconds
+        }
       });
   }
 
