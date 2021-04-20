@@ -1,5 +1,7 @@
 # alignpaper
 
+If you use or build on this codebase, please let me know.
+
 Start by reading `setup.sh`.
 
 To run the web application...
