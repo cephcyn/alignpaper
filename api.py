@@ -27,13 +27,13 @@ celery.conf.update(app.config)
 
 # NLP model imports...
 print('=== STARTING NLP MODEL IMPORTS ===')
-global coref_predictor
-global constituency_predictor
-global dependency_predictor
-global fasttext
-global sp
-global scisp
-global linker
+coref_predictor = None
+constituency_predictor = None
+dependency_predictor = None
+fasttext = None
+sp = None
+scisp = None
+linker = None
 
 # # TODO-REFERENCE originally from analyze.ipynb
 # # For sentence tokenization
@@ -88,7 +88,7 @@ def task_textalign(self, arg_input):
         meta={
             'current': rows_aligned,
             'total': rows_total,
-            'status': 'This is a placeholder text'
+            'status': 'Currently performing constituency parse...'
         }
     )
     # actually do some work now!
@@ -112,10 +112,19 @@ def task_textalign(self, arg_input):
     input_df = pd.DataFrame(input_df_dict.values(), index=input_df_dict.keys())
     input_df = input_df.applymap(lambda x: ('', '', []) if (x is None) else x)
     input_df.columns = [f'txt{i}' for i in range(len(input_df.columns))]
+    rows_aligned += 1
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            'current': rows_aligned,
+            'total': rows_total,
+            'status': f'Currently aligning... progress ({rows_aligned}/{rows_total})'
+        }
+    )
     # align the texts!
     align_df = input_df.loc[[0]]
     for i in range(1, len(input_df)):
-        rows_aligned = rows_aligned + 1
+        rows_aligned += 1
         align_df, align_df_score = alignutil.alignRowMajorLocal(
             align_df,
             input_df.loc[[i]],
@@ -126,7 +135,7 @@ def task_textalign(self, arg_input):
             meta={
                 'current': rows_aligned,
                 'total': rows_total,
-                'status': f'Currently aligning... done ({rows_aligned}/{rows_total})'
+                'status': f'Currently aligning... progress ({rows_aligned}/{rows_total})'
             }
         )
         # print(f'aligned {rows_aligned}/{rows_total}')
@@ -137,7 +146,7 @@ def task_textalign(self, arg_input):
 
 @app.route('/status/textalign/<task_id>', methods=['GET'])
 def taskstatus_textalign(task_id):
-    print('... called /status/textalign/<ID> ... ...')
+    # print('... called /status/textalign/<ID> ... ...')
     task = task_textalign.AsyncResult(task_id)
     if task.state == 'PENDING':
         # job did not start yet
@@ -322,13 +331,71 @@ def api_alignsearch():
             'traceback':f'{traceback.format_exc()}'
         }
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
-    greedystep_df, greedystep_score, greedystep_operation = alignutil.searchGreedyStep(
-        align_df,
-        spacy_model=sp,
-        scispacy_model=scisp,
-        scispacy_linker=linker,
-        embed_model=fasttext,
-        # max_row_length=max_row_length,
-    )
+    # set some temporary model variable names...
+    spacy_model = sp
+    scispacy_model = scisp
+    scispacy_linker = linker
+    embed_model = fasttext
+    max_row_length = None
+    term_weight_func=None
+    weight_components=None
+    # do the greedy step search ----
+    # calculate the step (alignment operation) space...
+    valid_operations = []
+    valid_operations += [('none', 0)]
+    # add shift steps
+    for col_i in range(len(align_df.columns)):
+        # get all valid clumps of rows in the column
+        col_texts = [
+            e for e in zip([e[0]
+            for e in align_df[align_df.columns[col_i]]], align_df.index)
+            if len(e[0])!=0
+        ]
+        row_clumps = {}
+        for col_word in set([e[0] for e in col_texts]):
+            row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
+        # calculate all possible shifts for each clump of rows
+        for row_clump_word in row_clumps:
+            for distance in range(-1 * len(align_df.columns), len(align_df.columns)):
+                if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, 1):
+                    valid_operations += [
+                        ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
+                    ]
+    # print(valid_operations)
+    # run through all of the operations and calculate what their result would be!
+    candidates = []
+    operation_i = 1
+    for selected_operation in valid_operations:
+        if selected_operation[0]=='shift':
+            operated = alignutil.shiftCells(
+                align_df,
+                selected_operation[1],
+                selected_operation[2],
+                selected_operation[3],
+                shift_size=selected_operation[4],
+            )
+        # elif selected_operation[0]=='split':
+        #     operated = alignutil.splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
+        # elif selected_operation[0]=='merge':
+        #     operated = alignutil.mergeCol(align_df, selected_operation[1])
+        elif selected_operation[0]=='none':
+            operated = align_df
+        else:
+            raise ValueError('uh oh, undefined operation')
+        singlescore, components, rawscores = alignutil.scoreAlignment(
+            operated,
+            spacy_model=spacy_model,
+            scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
+            embed_model=embed_model,
+            max_row_length=max_row_length,
+            # weight_components=weight_components
+        )
+        candidates.append((operated, singlescore, selected_operation))
+        print(f'computed {operation_i}/{len(valid_operations)} operations')
+        operation_i += 1
+    # sort the result candidates by score, descending
+    candidates.sort(key=lambda x: -1 * x[1])
+    # and pick the best candidate (operated, singlescore, selected_operation)
+    greedystep_df, greedystep_score, greedystep_operation = candidates[0]
     print('greedy step chose', greedystep_operation)
     return jsonify(alignutil.alignment_to_jsondict(greedystep_df))

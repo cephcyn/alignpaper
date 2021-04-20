@@ -645,38 +645,59 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     if weight_components is None:
         weight_components = np.array([0.2, 0.2, 1, 0, 0, 0])
 
-    # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
-    if max_row_length is None:
-        print('scoreAlignment: prefer having max_row_length input')
-        # traceback.print_stack(limit=5)
-        max_row_length = max([len([e[0] for e in align_df.loc[i] if len(e[0])!=0]) for i in align_df.index])
-
-    # get term weights
-    if term_weight_func is None:
-        alignment_terms = alignmentTermWeights(align_df, sp=spacy_model)
-        term_list = list(alignment_terms)
-        weight_terms = list(alignment_terms.values())
-    weight_terms = [r/sum(weight_terms) for r in weight_terms] # normalize the weights
-
-    # get column weights
-    score_colalltokens = [scoreColumnRepresentation(align_df, colname) for colname in align_df.columns]
-#     score_colalltokens = [scoreColumnTotalTokens(align_df, colname) for colname in align_df.columns]
-#     score_colalltokens = [1 for colname in align_df.columns]
-    weight_columns = [r/sum(score_colalltokens) for r in score_colalltokens] # normalize the column weights
-
-    # get score components
-    score_numcolumns = scoreNumColumns(align_df)
-    score_numfilledcolumns = scoreNumFilledColumns(align_df)
-    score_colptxtembed = [scoreColumnPhraseEmbedVariance(align_df, colname, embed_model) for colname in align_df.columns]
-    score_coltokncount = [scoreColumnTokenCount(align_df, colname) for colname in align_df.columns]
-    raw_colentityscores = [
-        scoreColumnTokenEntityCount(align_df, colname, scisp=scispacy_model, scisp_linker=scispacy_linker)
-        for colname in align_df.columns
-    ]
-#     raw_colentityscores = [(0,0) for colname in align_df.columns] # cheap filler score - use if scispacy not imported properly
+    # GET SCORE COMPONENTS
+    # calculate score_numcolumns subscore
+    if not weight_components[0]==0:
+        # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
+        if max_row_length is None:
+            # print('scoreAlignment: prefer having max_row_length input')
+            # traceback.print_stack(limit=5)
+            max_row_length = max([len([e[0] for e in align_df.loc[i] if len(e[0])!=0]) for i in align_df.index])
+        score_numcolumns = scoreNumColumns(align_df)
+    else:
+        score_numcolumns = 0
+    # calculate score_numfilledcolumns subscore
+    if not weight_components[1]==0:
+        score_numfilledcolumns = scoreNumFilledColumns(align_df)
+    else:
+        score_numfilledcolumns = 0
+    # calculate score_colptxtembed subscore
+    if not weight_components[2]==0:
+        score_colptxtembed = [scoreColumnPhraseEmbedVariance(align_df, colname, embed_model) for colname in align_df.columns]
+    else:
+        score_colptxtembed = [0 for colname in align_df.columns]
+    # calculate score_coltokncount subscore
+    if not weight_components[3]==0:
+        score_coltokncount = [scoreColumnTokenCount(align_df, colname) for colname in align_df.columns]
+    else:
+        score_coltokncount = [0 for colname in align_df.columns]
+    # calculate raw_colentityscores subscore
+    if not weight_components[4]==0:
+        raw_colentityscores = [
+            scoreColumnTokenEntityCount(align_df, colname, scisp=scispacy_model, scisp_linker=scispacy_linker)
+            for colname in align_df.columns
+        ]
+    else:
+        raw_colentityscores = [(0,0) for colname in align_df.columns]
     score_coltentcount = [s[0] for s in raw_colentityscores]
     score_colttuicount = [s[1] for s in raw_colentityscores]
-    score_termcolcount = scoreTermListColumnCount(align_df, term_list, weight_terms)
+    # calculate score_termcolcount subscore
+    if not weight_components[5]==0:
+        # get term weights...
+        if term_weight_func is None:
+            alignment_terms = alignmentTermWeights(align_df, sp=spacy_model)
+            term_list = list(alignment_terms)
+            weight_terms = list(alignment_terms.values())
+        weight_terms = [r/sum(weight_terms) for r in weight_terms] # normalize the weights
+        # get column weights...
+        score_colalltokens = [scoreColumnRepresentation(align_df, colname) for colname in align_df.columns]
+        #     score_colalltokens = [scoreColumnTotalTokens(align_df, colname) for colname in align_df.columns]
+        #     score_colalltokens = [1 for colname in align_df.columns]
+        weight_columns = [r/sum(score_colalltokens) for r in score_colalltokens] # normalize the column weights
+        score_termcolcount = scoreTermListColumnCount(align_df, term_list, weight_terms)
+    else:
+        weight_columns = [1/len(align_df.columns) for colname in align_df.columns]
+        score_termcolcount = 0
 
     # put score components into a df of their own that is neatly readable for debug purposes
     rawscores = pd.DataFrame([
@@ -697,7 +718,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     rawscores = rawscores.rename(columns=dict(zip(rawscores.columns, align_df.columns)))
 
     # apply column weights to the score components
-    components = np.array([
+    components = [
         # number of columns; lower is better
         -1 * math.pow((score_numcolumns / max_row_length), 1),
         # number of filled columns; lower is better
@@ -710,67 +731,9 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
         -1 * np.dot(score_colttuicount, weight_columns),
         # column count of terms used; lower is better
         -1 * score_termcolcount,
-    ])
+    ]
+    components = np.array(components)
     # apply score component weights (higher total score is better)
     bias = 5
     singlescore = bias + np.dot(weight_components, components)
     return singlescore, components, rawscores
-
-
-# calculate the score of all greedy steps within constraints we could take
-def searchGreedyStep(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
-    # calculate the step (alignment operation) space...
-    valid_operations = []
-    valid_operations += [('none', 0)]
-    # add shift steps
-    for col_i in range(len(align_df.columns)):
-        # get all valid clumps of rows in the column
-        col_texts = [
-            e for e in zip([e[0]
-            for e in align_df[align_df.columns[col_i]]], align_df.index)
-            if len(e[0])!=0
-        ]
-        row_clumps = {}
-        for col_word in set([e[0] for e in col_texts]):
-            row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
-        # calculate all possible shifts for each clump of rows
-        for row_clump_word in row_clumps:
-            for distance in range(-1 * len(align_df.columns), len(align_df.columns)):
-                if distance != 0 and canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, 1):
-                    valid_operations += [
-                        ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
-                    ]
-    print(valid_operations)
-    # run through all of the operations and calculate what their result would be!
-    candidates = []
-    operation_i = 1
-    for selected_operation in valid_operations:
-        if selected_operation[0]=='shift':
-            operated = shiftCells(
-                align_df,
-                selected_operation[1],
-                selected_operation[2],
-                selected_operation[3],
-                shift_size=selected_operation[4],
-            )
-        # elif selected_operation[0]=='split':
-        #     operated = splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
-        # elif selected_operation[0]=='merge':
-        #     operated = mergeCol(align_df, selected_operation[1])
-        elif selected_operation[0]=='none':
-            operated = align_df
-        else:
-            raise ValueError('uh oh, undefined operation')
-        singlescore, components, rawscores = scoreAlignment(
-            operated,
-            spacy_model=spacy_model,
-            scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
-            embed_model=embed_model,
-            max_row_length=max_row_length,
-            # weight_components=weight_components
-        )
-        candidates.append((operated, singlescore, selected_operation))
-    # sort the result candidates by score, descending
-    candidates.sort(key=lambda x: -1 * x[1])
-    # and return the best candidate (operated, singlescore, selected_operation)
-    return candidates[0]

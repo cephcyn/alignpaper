@@ -1,5 +1,6 @@
 #!/bin/bash
 
-celery -A api.celery worker --loglevel=info
+conda activate alignpaper
 
+celery -A api.celery worker --loglevel=info
 
