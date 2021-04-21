@@ -88,7 +88,7 @@ def task_textalign(self, arg_input):
         meta={
             'current': rows_aligned,
             'total': rows_total,
-            'status': 'Currently performing constituency parse...'
+            'status': 'Currently performing constituency parses...'
         }
     )
     # actually do some work now!
@@ -400,7 +400,6 @@ def task_alignsearch(self, arg_alignment):
         )
         candidates.append((operated, singlescore, selected_operation))
         states_calculated += 1
-        print(f'computed {states_calculated}/{states_total} operations')
         self.update_state(
             state='PROGRESS',
             meta={

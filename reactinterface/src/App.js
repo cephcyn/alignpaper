@@ -236,6 +236,7 @@ class App extends React.Component {
       inputvalue: "",
       loading: false,
       loadingstatus: "",
+      parse_constituency: {}
     };
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
@@ -245,6 +246,9 @@ class App extends React.Component {
     this.alignmentSearch = this.alignmentSearch.bind(this);
     this.updateSearchProgress = this.updateSearchProgress.bind(this);
     this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
+    this.alignDataSave = this.alignDataSave.bind(this);
+    this.alignDataLoadClick = this.alignDataLoadClick.bind(this);
+    this.alignDataLoad = this.alignDataLoad.bind(this);
   }
 
   handleTextChange(e) {
@@ -258,9 +262,6 @@ class App extends React.Component {
   alignRawText(e) {
     e.preventDefault();
     console.log("Raw text align button clicked!");
-    console.log(e);
-    console.log("value=");
-    console.log(this.state.inputvalue);
     this.setState({ loading: true });
     const requestOptions = {
       method: "POST",
@@ -312,7 +313,6 @@ class App extends React.Component {
   alignmentScore(e) {
     e.preventDefault();
     console.log("alignment score button clicked!");
-    console.log(e);
     this.setState({ loading: true });
     const requestOptions = {
       method: "POST",
@@ -334,7 +334,6 @@ class App extends React.Component {
   alignmentSearch(e) {
     e.preventDefault();
     console.log("alignment search button clicked!");
-    console.log(e);
     this.setState({ loading: true });
     const requestOptions = {
       method: "POST",
@@ -385,7 +384,44 @@ class App extends React.Component {
   buttonDoesNothing(e) {
     e.preventDefault();
     console.log("nothing button clicked!");
-    console.log(e);
+  }
+
+  alignDataSave(e) {
+    e.preventDefault();
+    console.log("save button clicked!");
+    const output = JSON.stringify({
+      alignment: this.state.alignment,
+      parse_constituency: this.state.parse_constituency,
+    });
+    const blob = new Blob([output]);
+    const fileDownloadUrl = URL.createObjectURL(blob);
+    this.setState ({fileDownloadUrl: fileDownloadUrl},
+      () => {
+        this.dofileDownload.click();
+        URL.revokeObjectURL(fileDownloadUrl);  // free up storage--no longer needed.
+        this.setState({fileDownloadUrl: ""})
+      }
+    );
+  }
+
+  alignDataLoadClick(e) {
+    e.preventDefault();
+    console.log("load button clicked!");
+    this.dofileUpload.click()
+  }
+
+  alignDataLoad(e) {
+    const fileObj = e.target.files[0];
+    const reader = new FileReader();
+    let fileloaded = e => {
+      // e.target.result is the file's content as text
+      const fileContents = e.target.result;
+      this.setState(JSON.parse(fileContents));
+    }
+
+    fileloaded = fileloaded.bind(this);
+    reader.onload = fileloaded;
+    reader.readAsText(fileObj);
   }
 
   render() {
@@ -424,6 +460,20 @@ class App extends React.Component {
         <button onClick={this.alignmentScore}>Alignment Score</button>
         <button onClick={this.alignmentSearch}>Alignment Search</button>
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
+        <br />
+        <button onClick={this.alignDataSave}>Save Alignment</button>
+        <a className="hidden"
+           download="alignment.json"
+           href={this.state.fileDownloadUrl}
+           ref={e=>this.dofileDownload = e}
+        >download-href</a>
+        <button onClick={this.alignDataLoadClick}>Load Alignment</button>
+        <input type="file" className="hidden"
+            multiple={false}
+            accept=".json,.text,application/json"
+            onChange={e => this.alignDataLoad(e)}
+            ref={e=>this.dofileUpload = e}
+          />
         <hr />
         {aligntable}
         {loadingspinner}
