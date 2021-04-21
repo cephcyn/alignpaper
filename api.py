@@ -238,15 +238,19 @@ def api_alignop_shift():
     except:
         return {
             'error': 'improperly formatted or missing arguments',
-            'traceback':f'{traceback.format_exc()}'
+            'traceback': f'{traceback.format_exc()}'
         }
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
-    align_df = alignutil.shiftCells(
-        align_df,
-        shift_rows=[arg_row],
-        shift_col=f'txt{arg_col}',
-        shift_distance=arg_shiftdist,
-    )
+    try:
+        align_df = alignutil.shiftCells(
+            align_df,
+            shift_rows=[arg_row],
+            shift_col=f'txt{arg_col}',
+            shift_distance=arg_shiftdist,
+        )
+    except:
+        # if shifting fails, just don't do it
+        pass
     return jsonify(alignutil.alignment_to_jsondict(align_df))
 
 
@@ -359,7 +363,6 @@ def task_alignsearch(self, arg_alignment):
                     valid_operations += [
                         ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
                     ]
-    # print(valid_operations)
     # initialize the progress variables
     states_calculated = 0
     states_total = len(valid_operations)
@@ -413,7 +416,17 @@ def task_alignsearch(self, arg_alignment):
     # and pick the best candidate (operated, singlescore, selected_operation)
     greedystep_df, greedystep_score, greedystep_operation = candidates[0]
     print('greedy step chose', greedystep_operation)
-    return alignutil.alignment_to_jsondict(greedystep_df)
+    # generate a nice readable status text
+    status_text = 'No operation performed'
+    if greedystep_operation[0]=='shift':
+        status_text = f'Shifted {greedystep_operation[4]} cells(s) ' \
+            + f'starting from column {greedystep_operation[2]} ' \
+            + f'in rows {greedystep_operation[1]} ' \
+            + f'by {greedystep_operation[3]} cell(s) to the right'
+    return {
+        'status': status_text,
+        'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment']
+    }
 
 
 @app.route('/status/alignsearch/<task_id>', methods=['GET'])

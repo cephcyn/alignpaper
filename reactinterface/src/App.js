@@ -6,38 +6,7 @@ import './App.css';
 class ShiftButton extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      could_shift: false
-    };
     this.shiftButton = this.shiftButton.bind(this);
-  }
-
-  componentDidMount() {
-    this.setState({ could_shift: false });
-    // set whether this shift button is enabled or not
-    const requestOptions = {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        alignment: JSON.stringify(this.props.data),
-        row: this.props.rownum,
-        col: this.props.colnum,
-        shift_dist: this.props.direction,
-      })
-    };
-    fetch("/api/alignop/canshift", requestOptions)
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
-        this.setState({ could_shift: data.is_legal });
-      });
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.data !== prevProps.data) {
-      this.componentDidMount();
-    }
   }
 
   shiftButton(e) {
@@ -78,7 +47,6 @@ class ShiftButton extends React.Component {
     return (
       <button
         className="tight"
-        disabled={!this.state.could_shift}
         onClick={this.shiftButton}>
           {text}
       </button>)
@@ -174,6 +142,23 @@ class AlignmentTable extends React.Component {
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
+    const output = this.props.data[0].txt.map(
+      (demotext, index) => {
+        return (
+          <th key={index}>
+            txt{index}
+          </th>
+        );
+      }
+    );
+    const header = (
+      <tr key='header'>
+        <td></td>
+        {output}
+      </tr>
+    );
+    console.log(header);
+
     const rows = this.props.data.map(
       (row) => {
         const cols = row.txt.map((cell, index) => {
@@ -220,6 +205,9 @@ class AlignmentTable extends React.Component {
 
     return (
       <table>
+        <thead>
+          {header}
+        </thead>
         <tbody>
           {rows}
         </tbody>
@@ -233,10 +221,10 @@ class App extends React.Component {
     super(props);
     this.state = {
       alignment: [],
+      parse_constituency: {},
       inputvalue: "",
       loading: false,
-      loadingstatus: "",
-      parse_constituency: {}
+      textstatus: "",
     };
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
@@ -290,22 +278,23 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
-            this.setState({ parse_constituency: data['parse_constituency'] });
             this.setState({ alignment: data['alignment'] });
+            this.setState({ parse_constituency: data['parse_constituency'] });
             this.setState({ loading: false });
-            this.setState({ loadingstatus: "" });
+            this.setState({ textstatus: "" });
           } else {
             // failure?
             this.setState({ alignment: [] });
+            this.setState({ parse_constituency: {} });
             this.setState({ loading: false });
-            this.setState({ loadingstatus: data['status'] });
+            this.setState({ textstatus: data['status'] });
           }
         } else {
           // check back on the progress every so often...
-          this.setState({ loadingstatus: data['status'] });
+          this.setState({ textstatus: data['status'] });
           setTimeout(() => {
             this.updateAlignmentProgress(status_url);
-          }, 2000); // 2000 = 2000ms = 2 seconds
+          }, 1000);
         }
       });
   }
@@ -347,7 +336,7 @@ class App extends React.Component {
         return response.json();
       })
       .then((data) => {
-        this.updateAlignmentProgress(data['location']);
+        this.updateSearchProgress(data['location']);
       });
   }
 
@@ -362,21 +351,24 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
+            console.log('setting data.alignment');
             this.setState({ alignment: data['alignment'] });
+            console.log('setting data.loading');
             this.setState({ loading: false });
-            this.setState({ loadingstatus: "" });
+            console.log('setting data.status');
+            this.setState({ textstatus: data['status'] });
           } else {
             // failure?
             this.setState({ alignment: [] });
             this.setState({ loading: false });
-            this.setState({ loadingstatus: data['status'] });
+            this.setState({ textstatus: data['status'] });
           }
         } else {
           // check back on the progress every so often...
-          this.setState({ loadingstatus: data['status'] });
+          this.setState({ textstatus: data['status'] });
           setTimeout(() => {
             this.updateSearchProgress(status_url);
-          }, 2000); // 2000 = 2000ms = 2 seconds
+          }, 1000);
         }
       });
   }
@@ -432,9 +424,9 @@ class App extends React.Component {
     // only render loading indicator spinner if we are currently waiting on the api
     let loadingspinner;
     if (this.state.loading) {
-      loadingspinner = <p>Working... {this.state.loadingstatus}</p>
+      loadingspinner = <p>Working...</p>
     } else {
-      loadingspinner = <br/>
+      loadingspinner = <br />
     }
 
     // only render alignment if there's content
@@ -477,6 +469,7 @@ class App extends React.Component {
         <hr />
         {aligntable}
         {loadingspinner}
+        <p>{this.state.textstatus}</p>
         <hr />
         <p>alignment_score is...</p>
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
