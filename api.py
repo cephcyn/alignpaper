@@ -418,11 +418,14 @@ def task_alignsearch(self, arg_alignment):
     print('greedy step chose', greedystep_operation)
     # generate a nice readable status text
     status_text = 'No operation performed'
-    if greedystep_operation[0]=='shift':
-        status_text = f'Shifted {greedystep_operation[4]} cells(s) ' \
-            + f'starting from column {greedystep_operation[2]} ' \
-            + f'in rows {greedystep_operation[1]} ' \
-            + f'by {greedystep_operation[3]} cell(s) to the right'
+    if (greedystep_operation[0]=='shift') and (greedystep_operation[3]!=0):
+        status_text = f'Shifted {greedystep_operation[4]} cells(s)'
+        status_text += f' starting from column {greedystep_operation[2]}'
+        status_text += f' in rows {greedystep_operation[1]}'
+        if greedystep_operation[3]>0:
+            status_text += f' by {greedystep_operation[3]} cell(s) to the right'
+        else:
+            status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
     return {
         'status': status_text,
         'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment']
