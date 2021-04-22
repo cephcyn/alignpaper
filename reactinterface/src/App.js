@@ -142,11 +142,20 @@ class AlignmentTable extends React.Component {
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
-    const output = this.props.data[0].txt.map(
-      (demotext, index) => {
+    const output = this.props.dataLockCols.map(
+      (locked, index) => {
         return (
           <th key={index}>
             txt{index}
+            <br/>
+            lock
+            <input
+              key={"collock"+index}
+              name={index}
+              type="checkbox"
+              checked={locked}
+              onChange={this.props.handleColLockChange}
+            />
           </th>
         );
       }
@@ -157,14 +166,13 @@ class AlignmentTable extends React.Component {
         {output}
       </tr>
     );
-    console.log(header);
 
     const rows = this.props.data.map(
       (row) => {
         const cols = row.txt.map((cell, index) => {
           return (
             <td key={index}>
-              {cell.join(' ')}
+              <strong>{cell.join(' ')}</strong>
               <br/>
               <ShiftButton
                 data={this.props.data}
@@ -221,6 +229,7 @@ class App extends React.Component {
     super(props);
     this.state = {
       alignment: [],
+      alignment_cols_locked: [],
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -228,6 +237,7 @@ class App extends React.Component {
     };
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
+    this.handleColLockChange = this.handleColLockChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
@@ -240,11 +250,25 @@ class App extends React.Component {
   }
 
   handleTextChange(e) {
-    this.setState({inputvalue: e.target.value});
+    this.setState({ inputvalue: e.target.value });
   }
 
   handleAlignmentChange(e) {
-    this.setState({alignment: e.alignment});
+    // console.log('in handleAlignmentChange');
+    this.setState({ alignment: e.alignment });
+    // TODO preserve previous cols_locked state somehow?
+    if (e.alignment.length > 0) {
+      this.setState({ alignment_cols_locked: new Array(e.alignment[0]['txt'].length).fill(false) });
+    }
+  }
+
+  handleColLockChange(e) {
+    // console.log('in handleColLockChange');
+    this.setState((prevState, props) => {
+      let updated = JSON.parse(JSON.stringify(prevState.alignment_cols_locked));
+      updated[e.target.name] = !updated[e.target.name];
+      return { alignment_cols_locked: updated };
+    });
   }
 
   alignRawText(e) {
@@ -383,6 +407,7 @@ class App extends React.Component {
     console.log("save button clicked!");
     const output = JSON.stringify({
       alignment: this.state.alignment,
+      alignment_cols_locked: this.state.alignment_cols_locked,
       parse_constituency: this.state.parse_constituency,
     });
     const blob = new Blob([output]);
@@ -418,7 +443,6 @@ class App extends React.Component {
 
   render() {
     console.log("rerendering App.......", new Date());
-    console.log("props:", this.props);
     console.log("state:", this.state);
 
     // only render loading indicator spinner if we are currently waiting on the api
@@ -434,7 +458,9 @@ class App extends React.Component {
     if (this.state.alignment.length > 0) {
       aligntable = <AlignmentTable
         data={this.state.alignment}
+        dataLockCols={this.state.alignment_cols_locked}
         onAlignmentChange={this.handleAlignmentChange}
+        handleColLockChange={this.handleColLockChange}
       />
     } else {
       aligntable = <br />
