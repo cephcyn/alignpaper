@@ -255,11 +255,13 @@ class App extends React.Component {
 
   handleAlignmentChange(e) {
     // console.log('in handleAlignmentChange');
-    this.setState({ alignment: e.alignment });
-    // TODO preserve previous cols_locked state somehow?
-    if (e.alignment.length > 0) {
+    if (
+      (e.alignment.length > 0)
+      && (e.alignment[0]['txt'].length !== this.state.alignment[0]['txt'].length)
+    ) {
       this.setState({ alignment_cols_locked: new Array(e.alignment[0]['txt'].length).fill(false) });
     }
+    this.setState({ alignment: e.alignment });
   }
 
   handleColLockChange(e) {
@@ -354,6 +356,7 @@ class App extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
+        alignment_cols_locked: JSON.stringify(this.state.alignment_cols_locked),
       })
     };
     fetch("/api/alignsearch", requestOptions)

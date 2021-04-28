@@ -7,6 +7,7 @@ import traceback
 import json
 import time
 from os import path
+import itertools
 import pandas as pd
 import numpy as np
 
@@ -323,7 +324,7 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment):
+def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary model variable names...
     spacy_model = sp
@@ -347,22 +348,43 @@ def task_alignsearch(self, arg_alignment):
     valid_operations += [('none', 0)]
     # add shift steps
     for col_i in range(len(align_df.columns)):
-        # get all valid clumps of rows in the column
-        col_texts = [
-            e for e in zip([e[0]
-            for e in align_df[align_df.columns[col_i]]], align_df.index)
-            if len(e[0])!=0
-        ]
-        row_clumps = {}
-        for col_word in set([e[0] for e in col_texts]):
-            row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
-        # calculate all possible shifts for each clump of rows
-        for row_clump_word in row_clumps:
-            for distance in range(-1 * len(align_df.columns), len(align_df.columns)):
-                if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, 1):
-                    valid_operations += [
-                        ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, 1)
-                    ]
+        # only shift from this col if it is not locked...
+        if not arg_alignment_cols_locked[col_i]:
+            # get all valid clumps of rows in the column
+            col_texts = [
+                e for e in zip([e[0]
+                for e in align_df[align_df.columns[col_i]]], align_df.index)
+                if len(e[0])!=0
+            ]
+            row_clumps = {}
+            for col_word in set([e[0] for e in col_texts]):
+                row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
+            # set how many columns we are shifting at once
+            shift_size = 1
+            # establish the basic shift ranges, expand it later
+            shift_lower_bound = 0
+            shift_upper_bound = 0
+            # now add locked column check info to the shift range
+            print(f'{arg_alignment_cols_locked[:col_i]}, {arg_alignment_cols_locked[col_i+1:]}')
+            if (col_i > 0) and not arg_alignment_cols_locked[col_i-1]:
+                shift_lower_bound = -1 * min(
+                    col_i,
+                    [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[:col_i])][-1]
+                )
+            if (col_i < len(arg_alignment_cols_locked)-1) and not arg_alignment_cols_locked[col_i+1]:
+                shift_upper_bound = min(
+                    len(align_df.columns) - col_i,
+                    [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[col_i+1:])][0]
+                ) - shift_size + 1
+            print(f'col-lock shift bounds of txt{col_i}: {shift_lower_bound}, {shift_upper_bound}')
+            # now calculate all legal shifts :)
+            for distance in range(shift_lower_bound, shift_upper_bound):
+                # calculate legality of shifting for each clump of rows
+                for row_clump_word in row_clumps:
+                    if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size):
+                        valid_operations += [
+                            ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size)
+                        ]
     # initialize the progress variables
     states_calculated = 0
     states_total = len(valid_operations)
@@ -473,6 +495,7 @@ def api_alignsearch():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -480,6 +503,7 @@ def api_alignsearch():
         }
     task = task_alignsearch.apply_async(kwargs={
         'arg_alignment':arg_alignment,
+        'arg_alignment_cols_locked':arg_alignment_cols_locked,
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)
