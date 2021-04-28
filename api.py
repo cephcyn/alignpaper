@@ -248,9 +248,11 @@ def api_alignop_shift():
             shift_rows=[arg_row],
             shift_col=f'txt{arg_col}',
             shift_distance=arg_shiftdist,
+            force_push=True,
         )
     except:
         # if shifting fails, just don't do it
+        print(traceback.format_exc())
         pass
     return jsonify(alignutil.alignment_to_jsondict(align_df))
 

@@ -394,26 +394,51 @@ def canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_si
 # Shifts the specified cells in an alignment
 # If it is impossible to shift the cells as specified, throws a ValueError
 # TODO-REFERENCE originally from alignment.ipynb
-def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=1, emptycell=('','',[]), debug_print=False):
+def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=1, force_push=False, emptycell=('','',[]), debug_print=False):
     if debug_print:
         print(f'shift rows {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over')
     # check if it's possible to shift
-    if not canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size):
-        raise ValueError('impossible to shift with given parameters: '
-                         + f'(shift row {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over)')
+    if not force_push and not canShiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size):
+        raise ValueError(
+            'impossible to shift with given parameters: '
+            + f'(shift row {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over)'
+        )
     # initialize the alignment table copy we'll be working with
     result = src_alignment.copy()
     # get the index numbers we are working with
     colindex_start = list(result.columns).index(shift_col)
     for shift_row in shift_rows:
+        row_colindex_start = colindex_start
+        row_shift_size = shift_size
+        if force_push:
+            # if force_push is True, then expand the selection to include stuff that gets pushed
+            shift_direction = int(shift_distance/abs(shift_distance))
+            next_cell_text = 'temp_init'
+            while len(next_cell_text)>0:
+                if (shift_direction<0) and (row_colindex_start>0):
+                    next_cell_text = result.loc[shift_row][row_colindex_start+shift_direction][0].strip()
+                elif (shift_direction>0) and (row_colindex_start+row_shift_size<len(result.columns)):
+                    next_cell_text = result.loc[shift_row][row_colindex_start+row_shift_size+shift_direction-1][0].strip()
+                else:
+                    next_cell_text = ''
+                if len(next_cell_text)>0:
+                    if shift_direction<0:
+                        row_colindex_start -= 1
+                    row_shift_size += 1
+            # check if it's possible to push all of this
+            if not canShiftCells(src_alignment, [shift_row], result.columns[row_colindex_start], shift_distance, row_shift_size):
+                raise ValueError(
+                    'impossible to shift with given parameters (even with force_push=True): '
+                    + f'(shift row {shift_rows}, {shift_size} cells starting from {shift_col}, {shift_distance} cells over)'
+                )
         # grab the old contents
-        clipboard = [e for e in result.loc[shift_row][colindex_start:colindex_start+shift_size]]
+        clipboard = [e for e in result.loc[shift_row][row_colindex_start:row_colindex_start+row_shift_size]]
         # replace old contents with empty tuples
-        for i in range(colindex_start, colindex_start+shift_size):
+        for i in range(row_colindex_start, row_colindex_start+row_shift_size):
             result.loc[shift_row][i] = emptycell
         # put old content in its destination location
         for i in range(len(clipboard)):
-            result.loc[shift_row][colindex_start+shift_distance+i] = clipboard[i]
+            result.loc[shift_row][row_colindex_start+shift_distance+i] = clipboard[i]
     return result # removeEmptyColumns(result)
 
 
