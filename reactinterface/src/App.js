@@ -347,7 +347,7 @@ class App extends React.Component {
       });
   }
 
-  alignmentSearch(e) {
+  alignmentSearch(e, numsteps) {
     e.preventDefault();
     console.log("alignment search button clicked!");
     this.setState({ loading: true });
@@ -357,6 +357,7 @@ class App extends React.Component {
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
         alignment_cols_locked: JSON.stringify(this.state.alignment_cols_locked),
+        greedysteps: JSON.stringify(numsteps),
       })
     };
     fetch("/api/alignsearch", requestOptions)
@@ -379,11 +380,8 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
-            console.log('setting data.alignment');
             this.setState({ alignment: data['alignment'] });
-            console.log('setting data.loading');
             this.setState({ loading: false });
-            console.log('setting data.status');
             this.setState({ textstatus: data['status'] });
           } else {
             // failure?
@@ -479,8 +477,9 @@ class App extends React.Component {
         />
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
-        <button onClick={this.alignmentScore}>Alignment Score</button>
-        <button onClick={this.alignmentSearch}>Alignment Search</button>
+        <button onClick={this.alignmentScore}>Score</button>
+        <button onClick={e => this.alignmentSearch(e, 1)}>Search (1 step)</button>
+        <button onClick={e => this.alignmentSearch(e, 10)}>Search (10 steps)</button>
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>
@@ -499,7 +498,7 @@ class App extends React.Component {
         <hr />
         {aligntable}
         {loadingspinner}
-        <p>{this.state.textstatus}</p>
+        <p className="preservenewline">{this.state.textstatus}</p>
         <hr />
         <p>alignment_score is...</p>
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>

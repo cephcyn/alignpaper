@@ -324,7 +324,7 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked):
+def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedysteps):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary model variable names...
     spacy_model = sp
@@ -332,99 +332,63 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked):
     scispacy_linker = linker
     embed_model = fasttext
     max_row_length = None
-    term_weight_func=None
-    weight_components=None
-    # do the greedy step search ----
-    self.update_state(
-        state='PROGRESS',
-        meta={
-            'current': 0,
-            'total': 0,
-            'status': 'Currently calculating operation space...'
-        }
-    )
-    # calculate the step (alignment operation) space...
-    valid_operations = []
-    valid_operations += [('none', 0)]
-    # add shift steps
-    for col_i in range(len(align_df.columns)):
-        # only shift from this col if it is not locked...
-        if not arg_alignment_cols_locked[col_i]:
-            # get all valid clumps of rows in the column
-            col_texts = [
-                e for e in zip([e[0]
-                for e in align_df[align_df.columns[col_i]]], align_df.index)
-                if len(e[0])!=0
-            ]
-            row_clumps = {}
-            for col_word in set([e[0] for e in col_texts]):
-                row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
-            # set how many columns we are shifting at once
-            shift_size = 1
-            # establish the basic shift ranges, expand it later
-            shift_lower_bound = 0
-            shift_upper_bound = 0
-            # now add locked column check info to the shift range
-            print(f'{arg_alignment_cols_locked[:col_i]}, {arg_alignment_cols_locked[col_i+1:]}')
-            if (col_i > 0) and not arg_alignment_cols_locked[col_i-1]:
-                shift_lower_bound = -1 * min(
-                    col_i,
-                    [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[:col_i])][-1]
-                )
-            if (col_i < len(arg_alignment_cols_locked)-1) and not arg_alignment_cols_locked[col_i+1]:
-                shift_upper_bound = min(
-                    len(align_df.columns) - col_i,
-                    [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[col_i+1:])][0]
-                ) - shift_size + 1
-            print(f'col-lock shift bounds of txt{col_i}: {shift_lower_bound}, {shift_upper_bound}')
-            # now calculate all legal shifts :)
-            for distance in range(shift_lower_bound, shift_upper_bound):
-                # calculate legality of shifting for each clump of rows
-                for row_clump_word in row_clumps:
-                    if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size):
-                        valid_operations += [
-                            ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size)
-                        ]
-    # initialize the progress variables
-    states_calculated = 0
-    states_total = len(valid_operations)
-    self.update_state(
-        state='PROGRESS',
-        meta={
-            'current': states_calculated,
-            'total': states_total,
-            'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
-        }
-    )
-    # run through all of the operations and calculate what their result would be!
-    candidates = []
-    for selected_operation in valid_operations:
-        if selected_operation[0]=='shift':
-            operated = alignutil.shiftCells(
-                align_df,
-                selected_operation[1],
-                selected_operation[2],
-                selected_operation[3],
-                shift_size=selected_operation[4],
-            )
-        # elif selected_operation[0]=='split':
-        #     operated = alignutil.splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
-        # elif selected_operation[0]=='merge':
-        #     operated = alignutil.mergeCol(align_df, selected_operation[1])
-        elif selected_operation[0]=='none':
-            operated = align_df
-        else:
-            raise ValueError('uh oh, undefined operation')
-        singlescore, components, rawscores = alignutil.scoreAlignment(
-            operated,
-            spacy_model=spacy_model,
-            scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
-            embed_model=embed_model,
-            max_row_length=max_row_length,
-            # weight_components=weight_components
+    term_weight_func = None
+    weight_components = None
+    # initialize some history tracking variables
+    operation_history = []
+    for step_number in range(arg_greedysteps):
+        # do the greedy step search ----
+        self.update_state(
+            state='PROGRESS',
+            meta={
+                'current': 0,
+                'total': 0,
+                'status': 'Currently calculating operation space...'
+            }
         )
-        candidates.append((operated, singlescore, selected_operation))
-        states_calculated += 1
+        # calculate the step (alignment operation) space...
+        valid_operations = []
+        valid_operations += [('none', 0)]
+        # add shift steps
+        for col_i in range(len(align_df.columns)):
+            # only shift from this col if it is not locked...
+            if not arg_alignment_cols_locked[col_i]:
+                # get all valid clumps of rows in the column
+                col_texts = [
+                    e for e in zip([e[0]
+                    for e in align_df[align_df.columns[col_i]]], align_df.index)
+                    if len(e[0])!=0
+                ]
+                row_clumps = {}
+                for col_word in set([e[0] for e in col_texts]):
+                    row_clumps[col_word] = [e[1] for e in col_texts if e[0]==col_word]
+                # set how many columns we are shifting at once
+                shift_size = 1
+                # establish the basic shift ranges, expand it later
+                shift_lower_bound = 0
+                shift_upper_bound = 0
+                # now add locked column check info to the shift range
+                if (col_i > 0) and not arg_alignment_cols_locked[col_i-1]:
+                    shift_lower_bound = -1 * min(
+                        col_i,
+                        [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[:col_i])][-1]
+                    )
+                if (col_i < len(arg_alignment_cols_locked)-1) and not arg_alignment_cols_locked[col_i+1]:
+                    shift_upper_bound = min(
+                        len(align_df.columns) - col_i,
+                        [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[col_i+1:])][0]
+                    ) - shift_size + 1
+                # now calculate all legal shifts :)
+                for distance in range(shift_lower_bound, shift_upper_bound):
+                    # calculate legality of shifting for each clump of rows
+                    for row_clump_word in row_clumps:
+                        if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size):
+                            valid_operations += [
+                                ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size)
+                            ]
+        # initialize the progress variables
+        states_calculated = 0
+        states_total = len(valid_operations)
         self.update_state(
             state='PROGRESS',
             meta={
@@ -433,23 +397,72 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked):
                 'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
             }
         )
-    # sort the result candidates by score, descending
-    candidates.sort(key=lambda x: -1 * x[1])
-    # and pick the best candidate (operated, singlescore, selected_operation)
-    greedystep_df, greedystep_score, greedystep_operation = candidates[0]
-    print('greedy step chose', greedystep_operation)
-    # generate a nice readable status text
-    status_text = 'No operation performed'
-    if (greedystep_operation[0]=='shift') and (greedystep_operation[3]!=0):
-        status_text = f'Shifted {greedystep_operation[4]} cells(s)'
-        status_text += f' starting from column {greedystep_operation[2]}'
-        status_text += f' in rows {greedystep_operation[1]}'
-        if greedystep_operation[3]>0:
-            status_text += f' by {greedystep_operation[3]} cell(s) to the right'
-        else:
-            status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
+        # run through all of the operations and calculate what their result would be!
+        candidates = []
+        for selected_operation in valid_operations:
+            if selected_operation[0]=='shift':
+                operated = alignutil.shiftCells(
+                    align_df,
+                    selected_operation[1],
+                    selected_operation[2],
+                    selected_operation[3],
+                    shift_size=selected_operation[4],
+                )
+            # elif selected_operation[0]=='split':
+            #     operated = alignutil.splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
+            # elif selected_operation[0]=='merge':
+            #     operated = alignutil.mergeCol(align_df, selected_operation[1])
+            elif selected_operation[0]=='none':
+                operated = align_df
+            else:
+                raise ValueError('uh oh, undefined operation')
+            singlescore, components, rawscores = alignutil.scoreAlignment(
+                operated,
+                spacy_model=spacy_model,
+                scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
+                embed_model=embed_model,
+                max_row_length=max_row_length,
+                # weight_components=weight_components
+            )
+            candidates.append((operated, singlescore, selected_operation))
+            states_calculated += 1
+            self.update_state(
+                state='PROGRESS',
+                meta={
+                    'current': states_calculated,
+                    'total': states_total,
+                    'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
+                }
+            )
+        # sort the result candidates by score, descending
+        candidates.sort(key=lambda x: -1 * x[1])
+        # and pick the best candidate (operated, singlescore, selected_operation)
+        greedystep_df, greedystep_score, greedystep_operation = candidates[0]
+        print('greedy step chose', greedystep_operation)
+        # generate a nice readable status text
+        status_text = 'No operation performed'
+        if (greedystep_operation[0]=='shift') and (greedystep_operation[3]!=0):
+            status_text = f'Shifted {greedystep_operation[4]} cells(s)'
+            status_text += f' starting from column {greedystep_operation[2]}'
+            status_text += f' in rows {greedystep_operation[1]}'
+            if greedystep_operation[3]>0:
+                status_text += f' by {greedystep_operation[3]} cell(s) to the right'
+            else:
+                status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
+        operation_history.append(status_text)
+        # break out of this loop if the greedy step was no-operation
+        if greedystep_operation[0]=='none':
+            print('breaking out of greedy step loop due to None operation')
+            break
+        # set align_df to greedystep_df to ready for next greedy step
+        align_df = greedystep_df
+    # clean up operation_history to have step numbers
+    operation_history = [
+        f'({i+1}/{len(operation_history)}): {operation_history[i]}'
+        for i in range(len(operation_history))
+    ]
     return {
-        'status': status_text,
+        'status': status_text if (len(operation_history)<2) else '\n'.join(operation_history),
         'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment']
     }
 
@@ -496,6 +509,7 @@ def api_alignsearch():
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
+        arg_greedysteps = int(json.loads(request_args['greedysteps']))
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -504,6 +518,7 @@ def api_alignsearch():
     task = task_alignsearch.apply_async(kwargs={
         'arg_alignment':arg_alignment,
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
+        'arg_greedysteps':arg_greedysteps,
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)
