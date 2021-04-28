@@ -152,6 +152,7 @@ def task_textalign(self, arg_input):
         # max_row_length=max_row_length,
     )
     output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
     return output
 
 
@@ -178,6 +179,10 @@ def taskstatus_textalign(task_id):
             response['parse_constituency'] = task.info['parse_constituency']
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
+        if 'alignment_score' in task.info:
+            response['alignment_score'] = task.info['alignment_score']
+        if 'alignment_score_components' in task.info:
+            response['alignment_score_components'] = task.info['alignment_score_components']
     else:
         # if we are in the failure state...
         # something went wrong in the background job
@@ -275,6 +280,7 @@ def api_alignop_shift():
         # max_row_length=max_row_length,
     )
     output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
     return jsonify(output)
 
 
@@ -309,6 +315,7 @@ def api_alignop_insertcol():
         # max_row_length=max_row_length,
     )
     output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
     return jsonify(output)
 
 
@@ -341,6 +348,7 @@ def api_alignop_deletecol():
         # max_row_length=max_row_length,
     )
     output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
     return jsonify(output)
 
 
@@ -365,7 +373,10 @@ def api_alignscore():
         embed_model=fasttext,
         # max_row_length=max_row_length,
     )
-    return jsonify({'alignment_score': singlescore})
+    output = {}
+    output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
+    return jsonify(output)
 
 
 @celery.task(bind=True)
@@ -381,6 +392,14 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
     weight_components = None
     # initialize some history tracking variables
     operation_history = []
+    initial_singlescore, initial_components, initial_rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
     for step_number in range(arg_greedysteps):
         # do the greedy step search ----
         self.update_state(
@@ -469,7 +488,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
                 max_row_length=max_row_length,
                 # weight_components=weight_components
             )
-            candidates.append((operated, singlescore, selected_operation))
+            candidates.append((operated, singlescore, selected_operation, components))
             states_calculated += 1
             self.update_state(
                 state='PROGRESS',
@@ -482,7 +501,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
         # sort the result candidates by score, descending
         candidates.sort(key=lambda x: -1 * x[1])
         # and pick the best candidate (operated, singlescore, selected_operation)
-        greedystep_df, greedystep_score, greedystep_operation = candidates[0]
+        greedystep_df, greedystep_score, greedystep_operation, greedystep_scorecomponents = candidates[0]
         print(f'greedy step chose {greedystep_operation} with score {greedystep_score}')
         # generate a nice readable status text
         status_text = 'No operation performed'
@@ -495,6 +514,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
             else:
                 status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
         status_text += f' (score is now {greedystep_score})'
+        status_text += f' (subscores are {greedystep_scorecomponents})'
         operation_history.append(status_text)
         # break out of this loop if the greedy step was no-operation
         if greedystep_operation[0]=='none':
@@ -502,15 +522,20 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
             break
         # set align_df to greedystep_df to ready for next greedy step
         align_df = greedystep_df
+    # prepend initial score info to the status
+    operation_history = [
+        f'Initial alignment score {initial_singlescore} (components {initial_components})'
+    ] + operation_history
     # clean up operation_history to have step numbers
     operation_history = [
-        f'({i+1}/{len(operation_history)}): {operation_history[i]}'
+        f'({i}/{len(operation_history)}): {operation_history[i]}'
         for i in range(len(operation_history))
     ]
     return {
         'status': '\n'.join(operation_history),
         'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment'],
         'alignment_score': greedystep_score,
+        'alignment_score_components': list(greedystep_scorecomponents)
     }
 
 
@@ -537,6 +562,8 @@ def taskstatus_alignsearch(task_id):
             response['alignment'] = task.info['alignment']
         if 'alignment_score' in task.info:
             response['alignment_score'] = task.info['alignment_score']
+        if 'alignment_score_components' in task.info:
+            response['alignment_score_components'] = task.info['alignment_score_components']
     else:
         # if we are in the failure state...
         # something went wrong in the background job

@@ -231,6 +231,7 @@ class App extends React.Component {
       alignment: [],
       alignment_cols_locked: [],
       alignment_score: null,
+      alignment_score_components: null,
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -390,7 +391,6 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
-            console.log(data);
             this.setState({
               alignment: data['alignment'],
               alignment_score: data['alignment_score'],
@@ -519,6 +519,8 @@ class App extends React.Component {
         <hr />
         <p>alignment_score is...</p>
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
+        <p>alignment_score_components is...</p>
+        <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
         <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
