@@ -230,6 +230,7 @@ class App extends React.Component {
     this.state = {
       alignment: [],
       alignment_cols_locked: [],
+      alignment_score: null,
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -262,6 +263,12 @@ class App extends React.Component {
       this.setState({ alignment_cols_locked: new Array(e.alignment[0]['txt'].length).fill(false) });
     }
     this.setState({ alignment: e.alignment });
+    if ('alignment_score' in e) {
+      this.setState({ alignment_score: e.alignment_score });
+    } else {
+      // automatically get the new alignment score
+      this.alignmentScore(e);
+    }
   }
 
   handleColLockChange(e) {
@@ -305,16 +312,20 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
-            this.setState({ alignment: data['alignment'] });
-            this.setState({ parse_constituency: data['parse_constituency'] });
-            this.setState({ loading: false });
-            this.setState({ textstatus: "" });
+            this.setState({
+              alignment: data['alignment'],
+              parse_constituency: data['parse_constituency'],
+              loading: false,
+              textstatus: "",
+            });
           } else {
             // failure?
-            this.setState({ alignment: [] });
-            this.setState({ parse_constituency: {} });
-            this.setState({ loading: false });
-            this.setState({ textstatus: data['status'] });
+            this.setState({
+              alignment: [],
+              parse_constituency: {},
+              loading: false,
+              textstatus: data['status'],
+            });
           }
         } else {
           // check back on the progress every so often...
@@ -327,8 +338,7 @@ class App extends React.Component {
   }
 
   alignmentScore(e) {
-    e.preventDefault();
-    console.log("alignment score button clicked!");
+    try {e.preventDefault();} catch {}
     this.setState({ loading: true });
     const requestOptions = {
       method: "POST",
@@ -380,14 +390,20 @@ class App extends React.Component {
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
             // success!
-            this.setState({ alignment: data['alignment'] });
-            this.setState({ loading: false });
-            this.setState({ textstatus: data['status'] });
+            console.log(data);
+            this.setState({
+              alignment: data['alignment'],
+              alignment_score: data['alignment_score'],
+              loading: false,
+              textstatus: data['status'],
+            });
           } else {
             // failure?
-            this.setState({ alignment: [] });
-            this.setState({ loading: false });
-            this.setState({ textstatus: data['status'] });
+            this.setState({
+              alignment: [],
+              loading: false,
+              textstatus: data['status']
+            });
           }
         } else {
           // check back on the progress every so often...
@@ -435,7 +451,8 @@ class App extends React.Component {
     let fileloaded = e => {
       // e.target.result is the file's content as text
       const fileContents = e.target.result;
-      this.setState(JSON.parse(fileContents));
+      const fileContentsParse = JSON.parse(fileContents);
+      this.setState(fileContentsParse);
     }
 
     fileloaded = fileloaded.bind(this);

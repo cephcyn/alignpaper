@@ -142,6 +142,16 @@ def task_textalign(self, arg_input):
         # print(f'aligned {rows_aligned}/{rows_total}')
     # convert the final alignment output to an outputtable format
     output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    output['alignment_score'] = singlescore
     return output
 
 
@@ -254,7 +264,18 @@ def api_alignop_shift():
         # if shifting fails, just don't do it
         print(traceback.format_exc())
         pass
-    return jsonify(alignutil.alignment_to_jsondict(align_df))
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    output['alignment_score'] = singlescore
+    return jsonify(output)
 
 
 @app.route('/api/alignop/insertcol', methods=['POST'])
@@ -277,7 +298,18 @@ def api_alignop_insertcol():
         insert_col=f'txt{arg_col}',
         insert_after=arg_insertafter,
     )
-    return jsonify(alignutil.alignment_to_jsondict(align_df))
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    output['alignment_score'] = singlescore
+    return jsonify(output)
 
 
 @app.route('/api/alignop/deletecol', methods=['POST'])
@@ -298,7 +330,18 @@ def api_alignop_deletecol():
         align_df,
         delete_col=f'txt{arg_col}',
     )
-    return jsonify(alignutil.alignment_to_jsondict(align_df))
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        # max_row_length=max_row_length,
+    )
+    output['alignment_score'] = singlescore
+    return jsonify(output)
 
 
 @app.route('/api/alignscore', methods=['POST'])
@@ -440,7 +483,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
         candidates.sort(key=lambda x: -1 * x[1])
         # and pick the best candidate (operated, singlescore, selected_operation)
         greedystep_df, greedystep_score, greedystep_operation = candidates[0]
-        print('greedy step chose', greedystep_operation)
+        print(f'greedy step chose {greedystep_operation} with score {greedystep_score}')
         # generate a nice readable status text
         status_text = 'No operation performed'
         if (greedystep_operation[0]=='shift') and (greedystep_operation[3]!=0):
@@ -451,6 +494,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
                 status_text += f' by {greedystep_operation[3]} cell(s) to the right'
             else:
                 status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
+        status_text += f' (score is now {greedystep_score})'
         operation_history.append(status_text)
         # break out of this loop if the greedy step was no-operation
         if greedystep_operation[0]=='none':
@@ -464,8 +508,9 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
         for i in range(len(operation_history))
     ]
     return {
-        'status': status_text if (len(operation_history)<2) else '\n'.join(operation_history),
-        'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment']
+        'status': '\n'.join(operation_history),
+        'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment'],
+        'alignment_score': greedystep_score,
     }
 
 
@@ -490,6 +535,8 @@ def taskstatus_alignsearch(task_id):
         }
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
+        if 'alignment_score' in task.info:
+            response['alignment_score'] = task.info['alignment_score']
     else:
         # if we are in the failure state...
         # something went wrong in the background job
