@@ -265,6 +265,7 @@ class App extends React.Component {
   handleColLockChange(e) {
     // console.log('in handleColLockChange');
     this.setState((prevState, props) => {
+      // this is an awful hack for deep cloning this list
       let updated = JSON.parse(JSON.stringify(prevState.alignment_cols_locked));
       updated[e.target.name] = !updated[e.target.name];
       return { alignment_cols_locked: updated };
