@@ -18,6 +18,7 @@ class ShiftButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
+        alignment_max_row_length: this.props.maxRowLength,
         row: this.props.rownum,
         col: this.props.colnum,
         shift_dist: this.props.direction,
@@ -68,6 +69,7 @@ class InsertButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
+        alignment_max_row_length: this.props.maxRowLength,
         col: this.props.colnum,
         insertafter: true,
       })
@@ -110,6 +112,7 @@ class DeleteButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
+        alignment_max_row_length: this.props.maxRowLength,
         col: this.props.colnum,
       })
     };
@@ -176,6 +179,7 @@ class AlignmentTable extends React.Component {
               <br/>
               <ShiftButton
                 data={this.props.data}
+                maxRowLength={this.props.maxRowLength}
                 rownum={row.id}
                 colnum={index}
                 direction={-1}
@@ -183,6 +187,7 @@ class AlignmentTable extends React.Component {
               />
               <ShiftButton
                 data={this.props.data}
+                maxRowLength={this.props.maxRowLength}
                 rownum={row.id}
                 colnum={index}
                 direction={1}
@@ -191,11 +196,13 @@ class AlignmentTable extends React.Component {
               <br/>
               <InsertButton
                 data={this.props.data}
+                maxRowLength={this.props.maxRowLength}
                 colnum={index}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <DeleteButton
                 data={this.props.data}
+                maxRowLength={this.props.maxRowLength}
                 colnum={index}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
@@ -230,6 +237,7 @@ class App extends React.Component {
     this.state = {
       alignment: [],
       alignment_cols_locked: [],
+      alignment_max_row_length: null,
       alignment_score: null,
       alignment_score_components: null,
       parse_constituency: {},
@@ -266,10 +274,12 @@ class App extends React.Component {
     this.setState({ alignment: e.alignment });
     if ('alignment_score' in e) {
       this.setState({ alignment_score: e.alignment_score });
-    } else {
-      // automatically get the new alignment score
-      this.alignmentScore(e);
     }
+    if ('alignment_score_components' in e) {
+      this.setState({ alignment_score_components: e.alignment_score_components });
+    }
+    // // automatically get the new alignment score and components
+    // this.alignmentScore(e);
   }
 
   handleColLockChange(e) {
@@ -315,6 +325,10 @@ class App extends React.Component {
             // success!
             this.setState({
               alignment: data['alignment'],
+              alignment_cols_locked: new Array(data['alignment'][0]['txt'].length).fill(false),
+              alignment_score: data['alignment_score'],
+              alignment_score_components: data['alignment_score_components'],
+              alignment_max_row_length: data['alignment_max_row_length'],
               parse_constituency: data['parse_constituency'],
               loading: false,
               textstatus: "",
@@ -346,6 +360,7 @@ class App extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
+        alignment_max_row_length: this.state.alignment_max_row_length,
       })
     };
     fetch("/api/alignscore", requestOptions)
@@ -368,6 +383,7 @@ class App extends React.Component {
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
         alignment_cols_locked: JSON.stringify(this.state.alignment_cols_locked),
+        alignment_max_row_length: this.state.alignment_max_row_length,
         greedysteps: JSON.stringify(numsteps),
       })
     };
@@ -426,6 +442,7 @@ class App extends React.Component {
     const output = JSON.stringify({
       alignment: this.state.alignment,
       alignment_cols_locked: this.state.alignment_cols_locked,
+      alignment_max_row_length: this.state.alignment_max_row_length,
       parse_constituency: this.state.parse_constituency,
     });
     const blob = new Blob([output]);
@@ -464,7 +481,7 @@ class App extends React.Component {
     console.log("rerendering App.......", new Date());
     console.log("state:", this.state);
 
-    // only render loading indicator spinner if we are currently waiting on the api
+    // only render loading indicator if we are currently waiting on the api
     let loadingspinner;
     if (this.state.loading) {
       loadingspinner = <p>Working...</p>
@@ -477,6 +494,7 @@ class App extends React.Component {
     if (this.state.alignment.length > 0) {
       aligntable = <AlignmentTable
         data={this.state.alignment}
+        maxRowLength={this.state.alignment_max_row_length}
         dataLockCols={this.state.alignment_cols_locked}
         onAlignmentChange={this.handleAlignmentChange}
         handleColLockChange={this.handleColLockChange}
@@ -521,6 +539,10 @@ class App extends React.Component {
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
         <p>alignment_score_components is...</p>
         <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
+        <p>Components meaning: alignment length, column filled-ness, column agreement</p>
+        <hr />
+        <p>alignment_max_row_length is...</p>
+        <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
         <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>

@@ -166,7 +166,7 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     # An implementation of Smith-Waterman alignment
     # RETURNS:
     #  1. The alignment DataFrame
-    #  2. The score associated with this alignment
+    #  2. The S-W score associated with this alignment
     if remove_empty_cols:
         align_a = removeEmptyColumns(align_a)
         align_b = removeEmptyColumns(align_b)
@@ -675,9 +675,10 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     if not weight_components[0]==0:
         # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
         if max_row_length is None:
-            # print('scoreAlignment: prefer having max_row_length input')
+            print('scoreAlignment: prefer having max_row_length input')
             # traceback.print_stack(limit=5)
-            max_row_length = max([len([e[0] for e in align_df.loc[i] if len(e[0])!=0]) for i in align_df.index])
+            # set max_row_length to max(number of cells occupied with text) over all rows in align_df
+            max_row_length = max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
         score_numcolumns = scoreNumColumns(align_df)
     else:
         score_numcolumns = 0

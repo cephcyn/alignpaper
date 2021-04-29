@@ -139,7 +139,9 @@ def task_textalign(self, arg_input):
                 'status': f'Currently aligning... progress ({rows_aligned}/{rows_total})'
             }
         )
-        # print(f'aligned {rows_aligned}/{rows_total}')
+    # compute max_row_length to be used for this set of texts
+    max_row_length = max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
+    output['alignment_max_row_length'] = max_row_length
     # convert the final alignment output to an outputtable format
     output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
     # get alignment score
@@ -149,7 +151,7 @@ def task_textalign(self, arg_input):
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=max_row_length,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -183,6 +185,8 @@ def taskstatus_textalign(task_id):
             response['alignment_score'] = task.info['alignment_score']
         if 'alignment_score_components' in task.info:
             response['alignment_score_components'] = task.info['alignment_score_components']
+        if 'alignment_max_row_length' in task.info:
+            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
     else:
         # if we are in the failure state...
         # something went wrong in the background job
@@ -248,6 +252,7 @@ def api_alignop_shift():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_row = int(request_args['row'])
         arg_col = int(request_args['col'])
         arg_shiftdist = int(request_args['shift_dist'])
@@ -277,7 +282,7 @@ def api_alignop_shift():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=arg_max_row_length,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -291,6 +296,7 @@ def api_alignop_insertcol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_insertafter = request_args['insertafter']
     except:
@@ -312,7 +318,7 @@ def api_alignop_insertcol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=arg_max_row_length,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -326,6 +332,7 @@ def api_alignop_deletecol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
     except:
         return {
@@ -345,7 +352,7 @@ def api_alignop_deletecol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=arg_max_row_length,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -359,6 +366,7 @@ def api_alignscore():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -371,7 +379,7 @@ def api_alignscore():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=arg_max_row_length,
     )
     output = {}
     output['alignment_score'] = singlescore
@@ -380,14 +388,14 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedysteps):
+def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary model variable names...
     spacy_model = sp
     scispacy_model = scisp
     scispacy_linker = linker
     embed_model = fasttext
-    max_row_length = None
+    max_row_length = arg_max_row_length
     term_weight_func = None
     weight_components = None
     # initialize some history tracking variables
@@ -398,7 +406,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        # max_row_length=max_row_length,
+        max_row_length=max_row_length,
     )
     for step_number in range(arg_greedysteps):
         # do the greedy step search ----
@@ -528,7 +536,7 @@ def task_alignsearch(self, arg_alignment, arg_alignment_cols_locked, arg_greedys
     ] + operation_history
     # clean up operation_history to have step numbers
     operation_history = [
-        f'({i}/{len(operation_history)}): {operation_history[i]}'
+        f'({i}/{len(operation_history)-1}): {operation_history[i]}'
         for i in range(len(operation_history))
     ]
     return {
@@ -578,12 +586,12 @@ def taskstatus_alignsearch(task_id):
 
 @app.route('/api/alignsearch', methods=['POST'])
 def api_alignsearch():
-    # TODO refactor into celery task
     print('... called /api/alignsearch ...')
     # retrieve arguments
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
     except:
@@ -593,6 +601,7 @@ def api_alignsearch():
         }
     task = task_alignsearch.apply_async(kwargs={
         'arg_alignment':arg_alignment,
+        'arg_max_row_length':arg_max_row_length,
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
         'arg_greedysteps':arg_greedysteps,
     })
