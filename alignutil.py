@@ -553,7 +553,9 @@ def scoreColumnTotalTokens(align_df, colname):
 def scoreNumFilledColumns(align_df):
     # empty columns don't count, so discount those...
     contents = [align_df[colname] for colname in align_df.columns]
-    contents = [len([cell[0] for cell in t if cell[0].strip()!='']) for t in contents]
+    # count how many texts are in each column
+    contents = [len([1 for cell in t if cell[0].strip()!='']) for t in contents]
+    # count how many columns have some text in them
     contents = [(1 if t>0 else 0) for t in contents]
     return sum(contents)
 
@@ -675,7 +677,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     if not weight_components[0]==0:
         # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
         if max_row_length is None:
-            print('scoreAlignment: prefer having max_row_length input')
+            print('scoreAlignment: self-generating max_row_length')
             # traceback.print_stack(limit=5)
             # set max_row_length to max(number of cells occupied with text) over all rows in align_df
             max_row_length = max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
@@ -715,15 +717,14 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
             term_list = list(alignment_terms)
             weight_terms = list(alignment_terms.values())
         weight_terms = [r/sum(weight_terms) for r in weight_terms] # normalize the weights
-        # get column weights...
-        score_colalltokens = [scoreColumnRepresentation(align_df, colname) for colname in align_df.columns]
-        #     score_colalltokens = [scoreColumnTotalTokens(align_df, colname) for colname in align_df.columns]
-        #     score_colalltokens = [1 for colname in align_df.columns]
-        weight_columns = [r/sum(score_colalltokens) for r in score_colalltokens] # normalize the column weights
         score_termcolcount = scoreTermListColumnCount(align_df, term_list, weight_terms)
     else:
-        weight_columns = [1/len(align_df.columns) for colname in align_df.columns]
         score_termcolcount = 0
+    # get column weights...
+    score_colalltokens = [scoreColumnRepresentation(align_df, colname) for colname in align_df.columns]
+    #     score_colalltokens = [scoreColumnTotalTokens(align_df, colname) for colname in align_df.columns]
+    #     score_colalltokens = [1 for colname in align_df.columns]
+    weight_columns = [r/sum(score_colalltokens) for r in score_colalltokens] # normalize the column weights
 
     # put score components into a df of their own that is neatly readable for debug purposes
     rawscores = pd.DataFrame([
