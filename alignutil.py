@@ -752,9 +752,9 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
         -1 * math.pow((score_numfilledcolumns / max_row_length), 1),
         # text embed vector variance; lower is better
         -1 * np.dot([math.pow(s, 2) for s in score_colptxtembed], weight_columns),
-        # varying distinct tokens; lower is better
+        # distinct tokens; lower is better
         -1 * np.dot(score_coltokncount, weight_columns),
-        # varying distinct entity TUIs; lower is better
+        # distinct entity TUIs; lower is better
         -1 * np.dot(score_colttuicount, weight_columns),
         # column count of terms used; lower is better
         -1 * score_termcolcount,

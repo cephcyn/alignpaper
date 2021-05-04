@@ -427,18 +427,19 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
     optimal_scorecomponents = initial_components
     optimal_df = align_df
     optimal_step_i = 0
+    # now actually do the search process, take all the steps we need
     for step_number in range(arg_greedysteps):
-        # do the greedy step search ----
         self.update_state(
             state='PROGRESS',
             meta={
-                'current': 0,
-                'total': 0,
-                'status': 'Currently calculating operation space...'
+                'current': step_number,
+                'total': arg_greedysteps,
+                'status': f'Step {step_number+1}/{arg_greedysteps}: calculating operation space...'
             }
         )
         # calculate the step (alignment operation) space...
         valid_operations = []
+        # add none step
         valid_operations += [('none', 0)]
         # add shift steps
         for col_i in range(len(align_df.columns)):
@@ -483,9 +484,9 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
         self.update_state(
             state='PROGRESS',
             meta={
-                'current': states_calculated,
-                'total': states_total,
-                'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
+                'current': step_number,
+                'total': arg_greedysteps,
+                'status': f'Step {step_number+1}/{arg_greedysteps}: calculating operation scores (progress {states_calculated}/{states_total})'
             }
         )
         # run through all of the operations and calculate what their result would be!
@@ -520,9 +521,9 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
             self.update_state(
                 state='PROGRESS',
                 meta={
-                    'current': states_calculated,
-                    'total': states_total,
-                    'status': f'Currently calculating operation scores... progress ({states_calculated}/{states_total})'
+                    'current': step_number,
+                    'total': arg_greedysteps,
+                    'status': f'Step {step_number+1}/{arg_greedysteps}: calculating operation scores (progress {states_calculated}/{states_total})'
                 }
             )
         # sort the result candidates by score, descending

@@ -325,6 +325,7 @@ class App extends React.Component {
             // success!
             this.setState({
               alignment: data['alignment'],
+              // TODO preserve column lock state somehow
               alignment_cols_locked: new Array(data['alignment'][0]['txt'].length).fill(false),
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
@@ -515,7 +516,8 @@ class App extends React.Component {
         <button onClick={this.alignRawText}>Align Texts</button>
         <button onClick={this.alignmentScore}>Score</button>
         <button onClick={e => this.alignmentSearch(e, 1)}>Search (1 step)</button>
-        <button onClick={e => this.alignmentSearch(e, 10)}>Search (10 steps)</button>
+        <button onClick={e => this.alignmentSearch(e, 10)}>Search (up to 10 steps)</button>
+        <button onClick={e => this.alignmentSearch(e, 50)}>Search (up to 50 steps)</button>
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>
@@ -540,7 +542,7 @@ class App extends React.Component {
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
         <p>alignment_score_components is...</p>
         <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
-        <p>Components meaning: alignment length, column filled-ness, column agreement</p>
+        <p>Components meaning: alignment length, column filled-ness, column agreement, distinct tokens, distinct entity TUIs, term column count</p>
         <hr />
         <p>alignment_max_row_length is...</p>
         <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
