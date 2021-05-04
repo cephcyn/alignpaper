@@ -410,6 +410,7 @@ class App extends React.Component {
             this.setState({
               alignment: data['alignment'],
               alignment_score: data['alignment_score'],
+              alignment_score_components: data['alignment_score_components'],
               loading: false,
               textstatus: data['status'],
             });

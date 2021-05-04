@@ -6,6 +6,7 @@ from celery import Celery
 import traceback
 import json
 import time
+import random
 from os import path
 import itertools
 import pandas as pd
@@ -390,7 +391,7 @@ def api_alignscore():
 @celery.task(bind=True)
 def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
-    # set some temporary model variable names...
+    # set some temporary variable names...
     spacy_model = sp
     scispacy_model = scisp
     scispacy_linker = linker
@@ -398,6 +399,20 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
     max_row_length = arg_max_row_length
     term_weight_func = None
     weight_components = None
+    move_distrib = [('greedy', 1), ('randomwalk', 1)]
+    none_optimal_cutoff = 2
+    # initialize move selection resources
+    random.seed()
+    none_optimal_n = 0
+    # function to select a move from a given move distribution
+    def select_move(move_distrib):
+        move_distrib_sum = sum(e[1] for e in move_distrib)
+        move_distrib_acc = [
+            (move_distrib[i][0], sum([e[1] for e in move_distrib[:i]]))
+            for i in range(len(move_distrib))
+        ]
+        move_i = random.randint(0, move_distrib_sum-1)
+        return [e for e in move_distrib_acc if e[1]>=move_i][0][0]
     # initialize some history tracking variables
     operation_history = []
     initial_singlescore, initial_components, initial_rawscores = alignutil.scoreAlignment(
@@ -408,6 +423,10 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
         embed_model=fasttext,
         max_row_length=max_row_length,
     )
+    optimal_score = initial_singlescore
+    optimal_scorecomponents = initial_components
+    optimal_df = align_df
+    optimal_step_i = 0
     for step_number in range(arg_greedysteps):
         # do the greedy step search ----
         self.update_state(
@@ -508,32 +527,59 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
             )
         # sort the result candidates by score, descending
         candidates.sort(key=lambda x: -1 * x[1])
-        # and pick the best candidate (operated, singlescore, selected_operation)
-        greedystep_df, greedystep_score, greedystep_operation, greedystep_scorecomponents = candidates[0]
-        print(f'greedy step chose {greedystep_operation} with score {greedystep_score}')
+        # keep track of how many times in a row the best option has been 'No move'
+        if candidates[0][2][0]=='none':
+            none_optimal_n += 1
+        else:
+            none_optimal_n = 0
+        # now actually make a step
+        move = select_move(move_distrib)
+        if move == 'greedy':
+            # pick the candidate with best score
+            step_df, step_score, step_operation, step_scorecomponents = candidates[0]
+            print(f'greedy step chose {step_operation} with score {step_score}')
+        elif move == 'randomwalk':
+            selected = random.randint(0, len(candidates)-1)
+            step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
+            if step_operation=='None':
+                # randomwalk isn't allowed to take 'None' move :P
+                selected = random.randint(0, len(candidates)-1)
+                step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
+            print(f'random step chose {step_operation} with score {step_score}')
+        # check if this step is the new optimal step
+        if step_score > optimal_score:
+            optimal_score = step_score
+            optimal_scorecomponents = step_scorecomponents
+            optimal_df = step_df
+            optimal_step_i = step_number
         # generate a nice readable status text
-        status_text = 'No operation performed'
-        if (greedystep_operation[0]=='shift') and (greedystep_operation[3]!=0):
-            status_text = f'Shifted {greedystep_operation[4]} cells(s)'
-            status_text += f' starting from column {greedystep_operation[2]}'
-            status_text += f' in rows {greedystep_operation[1]}'
-            if greedystep_operation[3]>0:
-                status_text += f' by {greedystep_operation[3]} cell(s) to the right'
+        status_text = f'{move} - '
+        if (step_operation[0]=='shift') and (step_operation[3]!=0):
+            status_text += f'Shifted {step_operation[4]} cells(s)'
+            status_text += f' starting from column {step_operation[2]}'
+            status_text += f' in rows {step_operation[1]}'
+            if step_operation[3]>0:
+                status_text += f' by {step_operation[3]} cell(s) to the right'
             else:
-                status_text += f' by {-1*greedystep_operation[3]} cell(s) to the left'
-        status_text += f' (score is now {greedystep_score})'
-        status_text += f' (subscores are {greedystep_scorecomponents})'
+                status_text += f' by {-1*step_operation[3]} cell(s) to the left'
+        else:
+            status_text += 'No operation performed'
+        status_text += f' (score is now {step_score})'
+        status_text += f' (subscores are {step_scorecomponents})'
         operation_history.append(status_text)
-        # break out of this loop if the greedy step was no-operation
-        if greedystep_operation[0]=='none':
-            print('breaking out of greedy step loop due to None operation')
+        # break out of this loop if we have hit the limit on # of none-optimals
+        if none_optimal_n >= none_optimal_cutoff:
+            print(f'breaking step loop because None operation was optimal {none_optimal_n}x in a row')
             break
-        # set align_df to greedystep_df to ready for next greedy step
-        align_df = greedystep_df
+        # set align_df to step_df to ready for next greedy step
+        align_df = step_df
+    print(f'optimal score was at step {optimal_step_i}')
     # prepend initial score info to the status
     operation_history = [
         f'Initial alignment score {initial_singlescore} (components {initial_components})'
     ] + operation_history
+    # only keep the slice of operation history up until the optimal state
+    operation_history = operation_history[:optimal_step_i+1]
     # clean up operation_history to have step numbers
     operation_history = [
         f'({i}/{len(operation_history)-1}): {operation_history[i]}'
@@ -541,9 +587,9 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
     ]
     return {
         'status': '\n'.join(operation_history),
-        'alignment': alignutil.alignment_to_jsondict(greedystep_df)['alignment'],
-        'alignment_score': greedystep_score,
-        'alignment_score_components': list(greedystep_scorecomponents)
+        'alignment': alignutil.alignment_to_jsondict(optimal_df)['alignment'],
+        'alignment_score': optimal_score,
+        'alignment_score_components': list(optimal_scorecomponents)
     }
 
 
