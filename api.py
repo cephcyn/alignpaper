@@ -81,7 +81,7 @@ print('=== FINISHED NLP MODEL IMPORTS ===')
 
 
 @celery.task(bind=True)
-def task_textalign(self, arg_input):
+def task_textalign(self, arg_input, arg_score_components):
     # initialize the progress variables
     rows_aligned = 0
     rows_total = len(arg_input)
@@ -153,6 +153,7 @@ def task_textalign(self, arg_input):
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=max_row_length,
+        weight_components=arg_score_components,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -208,6 +209,7 @@ def api_textalign():
     try:
         # arg_input = request_args['input'].split('\n') if ('input' in request_args) else ['default']
         arg_input = [e.strip() for e in request_args['input'].split('\n') if e.strip()!='']
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -215,6 +217,7 @@ def api_textalign():
         }
     task = task_textalign.apply_async(kwargs={
         'arg_input':arg_input,
+        'arg_score_components':arg_score_components
     })
     return jsonify({
         'location': url_for('taskstatus_textalign', task_id=task.id)
@@ -257,6 +260,7 @@ def api_alignop_shift():
         arg_row = int(request_args['row'])
         arg_col = int(request_args['col'])
         arg_shiftdist = int(request_args['shift_dist'])
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -284,6 +288,7 @@ def api_alignop_shift():
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=arg_max_row_length,
+        weight_components=arg_score_components,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -300,6 +305,7 @@ def api_alignop_insertcol():
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_insertafter = request_args['insertafter']
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -320,6 +326,7 @@ def api_alignop_insertcol():
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=arg_max_row_length,
+        weight_components=arg_score_components,
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -335,6 +342,7 @@ def api_alignop_deletecol():
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -354,6 +362,7 @@ def api_alignop_deletecol():
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=arg_max_row_length,
+        weight_components=arg_score_components
     )
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
@@ -368,6 +377,7 @@ def api_alignscore():
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -381,6 +391,7 @@ def api_alignscore():
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=arg_max_row_length,
+        weight_components=arg_score_components
     )
     output = {}
     output['alignment_score'] = singlescore
@@ -389,7 +400,7 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps):
+def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps, arg_score_components):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary variable names...
     spacy_model = sp
@@ -422,6 +433,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
         scispacy_linker=linker,
         embed_model=fasttext,
         max_row_length=max_row_length,
+        weight_components=arg_score_components,
     )
     optimal_score = initial_singlescore
     optimal_scorecomponents = initial_components
@@ -514,7 +526,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
                 scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
                 embed_model=embed_model,
                 max_row_length=max_row_length,
-                # weight_components=weight_components
+                weight_components=arg_score_components,
             )
             candidates.append((operated, singlescore, selected_operation, components))
             states_calculated += 1
@@ -641,6 +653,7 @@ def api_alignsearch():
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
+        arg_score_components = request_args['param_score_components']
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -651,6 +664,7 @@ def api_alignsearch():
         'arg_max_row_length':arg_max_row_length,
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
         'arg_greedysteps':arg_greedysteps,
+        'arg_score_components':arg_score_components,
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)

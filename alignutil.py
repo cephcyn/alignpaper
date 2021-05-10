@@ -670,6 +670,7 @@ def scoreTermListColumnCount(align_df, term_list, term_weights=None):
 def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
     # set default score weights...
     if weight_components is None:
+        print('scoreAlignment: using default weight_components')
         weight_components = np.array([0.2, 0.2, 1, 0, 0, 0])
 
     # GET SCORE COMPONENTS

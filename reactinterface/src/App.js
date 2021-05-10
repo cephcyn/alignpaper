@@ -18,10 +18,11 @@ class ShiftButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.maxRowLength,
+        alignment_max_row_length: this.props.max_row_length,
         row: this.props.rownum,
         col: this.props.colnum,
         shift_dist: this.props.direction,
+        param_score_components: this.props.param_score_components,
       })
     };
     fetch("/api/alignop/shift", requestOptions)
@@ -69,9 +70,10 @@ class InsertButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.maxRowLength,
+        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         insertafter: true,
+        param_score_components: this.props.param_score_components,
       })
     };
     fetch("/api/alignop/insertcol", requestOptions)
@@ -112,8 +114,9 @@ class DeleteButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.maxRowLength,
+        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
+        param_score_components: this.props.param_score_components,
       })
     };
     fetch("/api/alignop/deletecol", requestOptions)
@@ -179,31 +182,35 @@ class AlignmentTable extends React.Component {
               <br/>
               <ShiftButton
                 data={this.props.data}
-                maxRowLength={this.props.maxRowLength}
+                max_row_length={this.props.max_row_length}
                 rownum={row.id}
                 colnum={index}
                 direction={-1}
+                param_score_components={this.props.param_score_components}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <ShiftButton
                 data={this.props.data}
-                maxRowLength={this.props.maxRowLength}
+                max_row_length={this.props.max_row_length}
                 rownum={row.id}
                 colnum={index}
                 direction={1}
+                param_score_components={this.props.param_score_components}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <br/>
               <InsertButton
                 data={this.props.data}
-                maxRowLength={this.props.maxRowLength}
+                max_row_length={this.props.max_row_length}
                 colnum={index}
+                param_score_components={this.props.param_score_components}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <DeleteButton
                 data={this.props.data}
-                maxRowLength={this.props.maxRowLength}
+                max_row_length={this.props.max_row_length}
                 colnum={index}
+                param_score_components={this.props.param_score_components}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
             </td>
@@ -240,6 +247,7 @@ class App extends React.Component {
       alignment_max_row_length: null,
       alignment_score: null,
       alignment_score_components: null,
+      param_score_components: [0.2, 0.2, 1, 0, 0, 0],
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -300,7 +308,8 @@ class App extends React.Component {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        input: this.state.inputvalue
+        input: this.state.inputvalue,
+        param_score_components: this.state.param_score_components,
       })
     };
     fetch("/api/textalign", requestOptions)
@@ -362,6 +371,7 @@ class App extends React.Component {
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
         alignment_max_row_length: this.state.alignment_max_row_length,
+        param_score_components: this.state.param_score_components,
       })
     };
     fetch("/api/alignscore", requestOptions)
@@ -386,6 +396,7 @@ class App extends React.Component {
         alignment_cols_locked: JSON.stringify(this.state.alignment_cols_locked),
         alignment_max_row_length: this.state.alignment_max_row_length,
         greedysteps: JSON.stringify(numsteps),
+        param_score_components: this.state.param_score_components,
       })
     };
     fetch("/api/alignsearch", requestOptions)
@@ -496,7 +507,8 @@ class App extends React.Component {
     if (this.state.alignment.length > 0) {
       aligntable = <AlignmentTable
         data={this.state.alignment}
-        maxRowLength={this.state.alignment_max_row_length}
+        max_row_length={this.state.alignment_max_row_length}
+        param_score_components={this.state.param_score_components}
         dataLockCols={this.state.alignment_cols_locked}
         onAlignmentChange={this.handleAlignmentChange}
         handleColLockChange={this.handleColLockChange}
@@ -547,6 +559,8 @@ class App extends React.Component {
         <p>alignment_max_row_length is...</p>
         <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
         <hr />
+        <p>param_score_components is... (default is 0.2,0.2,1,0,0,0)</p>
+        <p>{this.state.param_score_components.toString()}</p>
         <img src={logo} className="App-logo" alt="logo" />
       </div>
     );
