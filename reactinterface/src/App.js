@@ -142,6 +142,21 @@ class DeleteButton extends React.Component {
   }
 }
 
+class ComponentSlider extends React.Component {
+  render() {
+    return (
+      <input
+        type="range"
+        min="0"
+        max="5"
+        step="0.1"
+        value={this.props.data}
+        onChange={this.props.onDataChange}
+      />
+    )
+  }
+}
+
 class AlignmentTable extends React.Component {
   render() {
     // console.log("rerendering AlignmentTable ..............");
@@ -256,6 +271,7 @@ class App extends React.Component {
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
     this.handleColLockChange = this.handleColLockChange.bind(this);
+    this.handleParamScoreComponentsChange = this.handleParamScoreComponentsChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
@@ -298,6 +314,13 @@ class App extends React.Component {
       updated[e.target.name] = !updated[e.target.name];
       return { alignment_cols_locked: updated };
     });
+  }
+
+  handleParamScoreComponentsChange(e, paramidx) {
+    // this.setState({ param_score_components: e.target.value });
+    let modified = JSON.parse(JSON.stringify(this.state.param_score_components));
+    modified[paramidx] = e.target.value;
+    this.setState({ param_score_components: modified });
   }
 
   alignRawText(e) {
@@ -502,7 +525,7 @@ class App extends React.Component {
       loadingspinner = <br />
     }
 
-    // only render alignment if there's content
+    // build the alignment table
     let aligntable;
     if (this.state.alignment.length > 0) {
       aligntable = <AlignmentTable
@@ -516,6 +539,57 @@ class App extends React.Component {
     } else {
       aligntable = <br />
     }
+
+    // build the parameter control table
+    let paramcontroltable;
+    paramcontroltable = (
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              alignment length
+            </td>
+            <td>
+              <ComponentSlider
+                data={this.state.param_score_components[0]}
+                onDataChange={e => this.handleParamScoreComponentsChange(e, 0)}
+              />
+            </td>
+            <td>
+              {this.state.param_score_components[0]}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              column filled-ness
+            </td>
+            <td>
+              <ComponentSlider
+                data={this.state.param_score_components[1]}
+                onDataChange={e => this.handleParamScoreComponentsChange(e, 1)}
+              />
+            </td>
+            <td>
+              {this.state.param_score_components[1]}
+            </td>
+          </tr>
+          <tr>
+            <td>
+              column agreement
+            </td>
+            <td>
+              <ComponentSlider
+                data={this.state.param_score_components[2]}
+                onDataChange={e => this.handleParamScoreComponentsChange(e, 2)}
+              />
+            </td>
+            <td>
+              {this.state.param_score_components[2]}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    );
 
     return (
       <div className="App">
@@ -545,6 +619,9 @@ class App extends React.Component {
             onChange={e => this.alignDataLoad(e)}
             ref={e=>this.dofileUpload = e}
           />
+        <br />
+        <br />
+        {paramcontroltable}
         <hr />
         {aligntable}
         {loadingspinner}
