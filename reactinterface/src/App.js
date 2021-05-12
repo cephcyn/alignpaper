@@ -264,6 +264,7 @@ class App extends React.Component {
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
+    this.alignmentSearchButton = this.alignmentSearchButton.bind(this);
     this.alignmentSearch = this.alignmentSearch.bind(this);
     this.updateSearchProgress = this.updateSearchProgress.bind(this);
     this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
@@ -360,6 +361,8 @@ class App extends React.Component {
               loading: false,
               textstatus: "",
             });
+            // and automatically chain in an alignment search to finetune it a bit...
+            this.alignmentSearch(null, 50);
           } else {
             // failure?
             this.setState({
@@ -401,9 +404,14 @@ class App extends React.Component {
       });
   }
 
-  alignmentSearch(e, numsteps) {
+  alignmentSearchButton(e, numsteps) {
     e.preventDefault();
     console.log("alignment search button clicked!");
+    this.alignmentSearch(e, numsteps);
+  }
+
+  alignmentSearch(e, numsteps) {
+    console.log("performing alignment search!");
     this.setState({ loading: true });
     const requestOptions = {
       method: "POST",
@@ -414,7 +422,7 @@ class App extends React.Component {
         alignment_max_row_length: this.state.alignment_max_row_length,
         greedysteps: JSON.stringify(numsteps),
         param_score_components: this.state.param_score_components,
-        param_move_distrib: JSON.stringify(this.state.param_move_distrib),
+        param_move_distrib: this.state.param_move_distrib,
       })
     };
     fetch("/api/alignsearch", requestOptions)
@@ -617,9 +625,9 @@ class App extends React.Component {
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
         <button onClick={this.alignmentScore}>Score</button>
-        <button onClick={e => this.alignmentSearch(e, 1)}>Search (1 step)</button>
-        <button onClick={e => this.alignmentSearch(e, 10)}>Search (up to 10 steps)</button>
-        <button onClick={e => this.alignmentSearch(e, 50)}>Search (up to 50 steps)</button>
+        <button onClick={e => this.alignmentSearchButton(e, 1)}>Search (1 step)</button>
+        <button onClick={e => this.alignmentSearchButton(e, 10)}>Search (up to 10 steps)</button>
+        <button onClick={e => this.alignmentSearchButton(e, 50)}>Search (up to 50 steps)</button>
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>

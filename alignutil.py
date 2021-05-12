@@ -675,7 +675,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
 
     # GET SCORE COMPONENTS
     # calculate score_numcolumns subscore
-    if not weight_components[0]==0:
+    if not weight_components[0]==0 or True:
         # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
         if max_row_length is None:
             print('scoreAlignment: self-generating max_row_length')
@@ -686,12 +686,12 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
     else:
         score_numcolumns = 0
     # calculate score_numfilledcolumns subscore
-    if not weight_components[1]==0:
+    if not weight_components[1]==0 or True:
         score_numfilledcolumns = scoreNumFilledColumns(align_df)
     else:
         score_numfilledcolumns = 0
     # calculate score_colptxtembed subscore
-    if not weight_components[2]==0:
+    if not weight_components[2]==0 or True:
         score_colptxtembed = [scoreColumnPhraseEmbedVariance(align_df, colname, embed_model) for colname in align_df.columns]
     else:
         score_colptxtembed = [0 for colname in align_df.columns]

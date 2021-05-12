@@ -208,8 +208,9 @@ def api_textalign():
     request_args = request.get_json()
     try:
         arg_input = [e.strip() for e in request_args['input'].split('\n') if e.strip()!='']
-        arg_score_components = request_args['param_score_components']
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback': f'{traceback.format_exc()}'
@@ -233,6 +234,7 @@ def api_alignop_canshift():
         arg_col = int(request_args['col'])
         arg_shiftdist = int(request_args['shift_dist'])
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
@@ -259,8 +261,9 @@ def api_alignop_shift():
         arg_row = int(request_args['row'])
         arg_col = int(request_args['col'])
         arg_shiftdist = int(request_args['shift_dist'])
-        arg_score_components = request_args['param_score_components']
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback': f'{traceback.format_exc()}'
@@ -304,8 +307,9 @@ def api_alignop_insertcol():
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_insertafter = request_args['insertafter']
-        arg_score_components = request_args['param_score_components']
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
@@ -341,8 +345,9 @@ def api_alignop_deletecol():
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
-        arg_score_components = request_args['param_score_components']
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
@@ -376,8 +381,9 @@ def api_alignscore():
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
-        arg_score_components = request_args['param_score_components']
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
@@ -422,7 +428,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
             for i in range(len(move_distrib))
         ]
         move_i = random.randint(0, move_distrib_sum-1)
-        return [e for e in move_distrib_acc if e[1]>=move_i][0][0]
+        return [e for e in move_distrib_acc if e[1]<=move_i][-1][0]
     # initialize some history tracking variables
     operation_history = []
     initial_singlescore, initial_components, initial_rawscores = alignutil.scoreAlignment(
@@ -482,7 +488,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
                         [sum(1 for _ in group) for e, group in itertools.groupby(arg_alignment_cols_locked[col_i+1:])][0]
                     ) - shift_size + 1
                 # now calculate all legal shifts :)
-                for distance in range(shift_lower_bound, shift_upper_bound):
+                for distance in range(shift_lower_bound, shift_upper_bound+1):
                     # calculate legality of shifting for each clump of rows
                     for row_clump_word in row_clumps:
                         if distance != 0 and alignutil.canShiftCells(align_df, row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size):
@@ -492,6 +498,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
         # initialize the progress variables
         states_calculated = 0
         states_total = len(valid_operations)
+        print(valid_operations)
         self.update_state(
             state='PROGRESS',
             meta={
@@ -585,13 +592,12 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
             break
         # set align_df to step_df to ready for next greedy step
         align_df = step_df
-    print(f'optimal score was at step {optimal_step_i}')
+    # only keep the slice of operation history up until the optimal state
+    operation_history = operation_history[:optimal_step_i+1]
     # prepend initial score info to the status
     operation_history = [
         f'Initial alignment score {initial_singlescore} (components {initial_components})'
     ] + operation_history
-    # only keep the slice of operation history up until the optimal state
-    operation_history = operation_history[:optimal_step_i+1]
     # clean up operation_history to have step numbers
     operation_history = [
         f'({i}/{len(operation_history)-1}): {operation_history[i]}'
@@ -652,10 +658,11 @@ def api_alignsearch():
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
-        arg_score_components = request_args['param_score_components']
-        arg_move_distrib_greedy = int(request_args['param_move_distrib'][0]) #if ('param_move_distrib' in request_args) else -1
-        arg_move_distrib_random = int(request_args['param_move_distrib'][1]) #if ('param_move_distrib' in request_args) else -1
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
+        arg_move_distrib = [int(e) for e in request_args['param_move_distrib']]
+        #if ('param_move_distrib' in request_args)
     except:
+        print(traceback.format_exc())
         return {
             'error': 'improperly formatted or missing arguments',
             'traceback':f'{traceback.format_exc()}'
@@ -666,7 +673,7 @@ def api_alignsearch():
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
         'arg_greedysteps':arg_greedysteps,
         'arg_score_components':arg_score_components,
-        'arg_move_distrib':[('greedy', arg_move_distrib_greedy), ('randomwalk', arg_move_distrib_random)],
+        'arg_move_distrib':[('greedy', arg_move_distrib[0]), ('randomwalk', arg_move_distrib[1])],
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)
