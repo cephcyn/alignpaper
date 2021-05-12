@@ -147,8 +147,8 @@ class ComponentSlider extends React.Component {
     return (
       <input
         type="range"
-        min="0"
-        max="5"
+        min="-1"
+        max="1"
         step="0.1"
         value={this.props.data}
         onChange={this.props.onDataChange}
@@ -263,6 +263,7 @@ class App extends React.Component {
       alignment_score: null,
       alignment_score_components: null,
       param_score_components: [0.2, 0.2, 1, 0, 0, 0],
+      param_score_components_default: [0.2, 0.2, 1, 0, 0, 0],
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -542,51 +543,35 @@ class App extends React.Component {
 
     // build the parameter control table
     let paramcontroltable;
+    const paramscorecontrols = [
+      "alignment length",
+      "column filled-ness",
+      "column agreement",
+      "distinct tokens",
+      "distinct entity TUIs",
+      "term column count"
+    ].map((component_name, index) => {
+      return (
+        <tr key={index}>
+          <td>
+            {component_name}
+          </td>
+          <td>
+            <ComponentSlider
+              data={this.state.param_score_components[index]}
+              onDataChange={e => this.handleParamScoreComponentsChange(e, index)}
+            />
+          </td>
+          <td>
+            {this.state.param_score_components[index]}
+          </td>
+        </tr>
+      );
+    })
     paramcontroltable = (
       <table>
         <tbody>
-          <tr>
-            <td>
-              alignment length
-            </td>
-            <td>
-              <ComponentSlider
-                data={this.state.param_score_components[0]}
-                onDataChange={e => this.handleParamScoreComponentsChange(e, 0)}
-              />
-            </td>
-            <td>
-              {this.state.param_score_components[0]}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              column filled-ness
-            </td>
-            <td>
-              <ComponentSlider
-                data={this.state.param_score_components[1]}
-                onDataChange={e => this.handleParamScoreComponentsChange(e, 1)}
-              />
-            </td>
-            <td>
-              {this.state.param_score_components[1]}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              column agreement
-            </td>
-            <td>
-              <ComponentSlider
-                data={this.state.param_score_components[2]}
-                onDataChange={e => this.handleParamScoreComponentsChange(e, 2)}
-              />
-            </td>
-            <td>
-              {this.state.param_score_components[2]}
-            </td>
-          </tr>
+          {paramscorecontrols}
         </tbody>
       </table>
     );
@@ -631,13 +616,10 @@ class App extends React.Component {
         <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
         <p>alignment_score_components is...</p>
         <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
-        <p>Components meaning: alignment length, column filled-ness, column agreement, distinct tokens, distinct entity TUIs, term column count</p>
         <hr />
         <p>alignment_max_row_length is...</p>
         <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
         <hr />
-        <p>param_score_components is... (default is 0.2,0.2,1,0,0,0)</p>
-        <p>{this.state.param_score_components.toString()}</p>
         <img src={logo} className="App-logo" alt="logo" />
       </div>
     );
