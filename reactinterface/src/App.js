@@ -142,21 +142,6 @@ class DeleteButton extends React.Component {
   }
 }
 
-class ComponentSlider extends React.Component {
-  render() {
-    return (
-      <input
-        type="range"
-        min="-1"
-        max="1"
-        step="0.1"
-        value={this.props.data}
-        onChange={this.props.onDataChange}
-      />
-    )
-  }
-}
-
 class AlignmentTable extends React.Component {
   render() {
     // console.log("rerendering AlignmentTable ..............");
@@ -264,6 +249,8 @@ class App extends React.Component {
       alignment_score_components: null,
       param_score_components: [0.2, 0.2, 1, 0, 0, 0],
       param_score_components_default: [0.2, 0.2, 1, 0, 0, 0],
+      param_move_distrib: [1, 1],
+      param_move_distrib_default: [1, 1],
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -273,6 +260,7 @@ class App extends React.Component {
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
     this.handleColLockChange = this.handleColLockChange.bind(this);
     this.handleParamScoreComponentsChange = this.handleParamScoreComponentsChange.bind(this);
+    this.handleParamMoveDistribChange = this.handleParamMoveDistribChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
@@ -318,10 +306,15 @@ class App extends React.Component {
   }
 
   handleParamScoreComponentsChange(e, paramidx) {
-    // this.setState({ param_score_components: e.target.value });
     let modified = JSON.parse(JSON.stringify(this.state.param_score_components));
     modified[paramidx] = e.target.value;
     this.setState({ param_score_components: modified });
+  }
+
+  handleParamMoveDistribChange(e, paramidx) {
+    let modified = JSON.parse(JSON.stringify(this.state.param_move_distrib));
+    modified[paramidx] = e.target.value;
+    this.setState({ param_move_distrib: modified });
   }
 
   alignRawText(e) {
@@ -421,6 +414,7 @@ class App extends React.Component {
         alignment_max_row_length: this.state.alignment_max_row_length,
         greedysteps: JSON.stringify(numsteps),
         param_score_components: this.state.param_score_components,
+        param_move_distrib: JSON.stringify(this.state.param_move_distrib),
       })
     };
     fetch("/api/alignsearch", requestOptions)
@@ -541,15 +535,14 @@ class App extends React.Component {
       aligntable = <br />
     }
 
-    // build the parameter control table
-    let paramcontroltable;
-    const paramscorecontrols = [
+    // build the score component weighting control table
+    let scorecomponenttable = [
       "alignment length",
       "column filled-ness",
       "column agreement",
       "distinct tokens",
       "distinct entity TUIs",
-      "term column count"
+      "term column count",
     ].map((component_name, index) => {
       return (
         <tr key={index}>
@@ -557,9 +550,13 @@ class App extends React.Component {
             {component_name}
           </td>
           <td>
-            <ComponentSlider
-              data={this.state.param_score_components[index]}
-              onDataChange={e => this.handleParamScoreComponentsChange(e, index)}
+            <input
+              type="range"
+              min="-1"
+              max="1"
+              step="0.1"
+              value={this.state.param_score_components[index]}
+              onChange={e => this.handleParamScoreComponentsChange(e, index)}
             />
           </td>
           <td>
@@ -567,11 +564,45 @@ class App extends React.Component {
           </td>
         </tr>
       );
-    })
-    paramcontroltable = (
+    });
+    scorecomponenttable = (
       <table>
         <tbody>
-          {paramscorecontrols}
+          {scorecomponenttable}
+        </tbody>
+      </table>
+    );
+
+    // build the search step weighting control table
+    let movedistribtable = [
+      "greedy",
+      "random",
+    ].map((move_name, index) => {
+      return (
+        <tr key={index}>
+          <td>
+            {move_name}
+          </td>
+          <td>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="1"
+              value={this.state.param_move_distrib[index]}
+              onChange={e => this.handleParamMoveDistribChange(e, index)}
+            />
+          </td>
+          <td>
+            {this.state.param_move_distrib[index]}
+          </td>
+        </tr>
+      );
+    });
+    movedistribtable = (
+      <table>
+        <tbody>
+          {movedistribtable}
         </tbody>
       </table>
     );
@@ -606,7 +637,8 @@ class App extends React.Component {
           />
         <br />
         <br />
-        {paramcontroltable}
+        {scorecomponenttable}
+        {movedistribtable}
         <hr />
         {aligntable}
         {loadingspinner}

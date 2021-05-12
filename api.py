@@ -207,7 +207,6 @@ def api_textalign():
     # retrieve arguments
     request_args = request.get_json()
     try:
-        # arg_input = request_args['input'].split('\n') if ('input' in request_args) else ['default']
         arg_input = [e.strip() for e in request_args['input'].split('\n') if e.strip()!='']
         arg_score_components = request_args['param_score_components']
     except:
@@ -400,7 +399,7 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps, arg_score_components):
+def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps, arg_score_components, arg_move_distrib):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary variable names...
     spacy_model = sp
@@ -410,7 +409,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
     max_row_length = arg_max_row_length
     term_weight_func = None
     weight_components = None
-    move_distrib = [('greedy', 1), ('randomwalk', 1)]
+    move_distrib = arg_move_distrib
     none_optimal_cutoff = 2
     # initialize move selection resources
     random.seed()
@@ -654,6 +653,8 @@ def api_alignsearch():
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
         arg_score_components = request_args['param_score_components']
+        arg_move_distrib_greedy = int(request_args['param_move_distrib'][0]) #if ('param_move_distrib' in request_args) else -1
+        arg_move_distrib_random = int(request_args['param_move_distrib'][1]) #if ('param_move_distrib' in request_args) else -1
     except:
         return {
             'error': 'improperly formatted or missing arguments',
@@ -665,6 +666,7 @@ def api_alignsearch():
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
         'arg_greedysteps':arg_greedysteps,
         'arg_score_components':arg_score_components,
+        'arg_move_distrib':[('greedy', arg_move_distrib_greedy), ('randomwalk', arg_move_distrib_random)],
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)
