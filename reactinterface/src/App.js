@@ -142,6 +142,49 @@ class DeleteButton extends React.Component {
   }
 }
 
+class MergeButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.mergeButton = this.mergeButton.bind(this);
+  }
+
+  mergeButton(e) {
+    e.preventDefault();
+    console.log("Merge button clicked!");
+    console.log(e);
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alignment: JSON.stringify(this.props.data),
+        alignment_max_row_length: this.props.max_row_length,
+        col: this.props.colnum,
+        param_score_components: this.props.param_score_components,
+      })
+    };
+    fetch("/api/alignop/mergecol", requestOptions)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
+  }
+
+  render() {
+    // console.log("rerendering MergeButton ...........");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    return (
+      <button
+        className="tight"
+        onClick={this.mergeButton}>
+          M
+      </button>)
+  }
+}
+
 class AlignmentTable extends React.Component {
   render() {
     // console.log("rerendering AlignmentTable ..............");
@@ -207,6 +250,13 @@ class AlignmentTable extends React.Component {
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <DeleteButton
+                data={this.props.data}
+                max_row_length={this.props.max_row_length}
+                colnum={index}
+                param_score_components={this.props.param_score_components}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
+              <MergeButton
                 data={this.props.data}
                 max_row_length={this.props.max_row_length}
                 colnum={index}
@@ -352,7 +402,7 @@ class App extends React.Component {
             // success!
             this.setState({
               alignment: data['alignment'],
-              // TODO preserve column lock state somehow
+              // when doing initial alignment, no columns are locked
               alignment_cols_locked: new Array(data['alignment'][0]['txt'].length).fill(false),
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
@@ -625,10 +675,10 @@ class App extends React.Component {
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
         <button onClick={this.alignmentScore}>Score</button>
+        <br />
         <button onClick={e => this.alignmentSearchButton(e, 1)}>Search (1 step)</button>
         <button onClick={e => this.alignmentSearchButton(e, 10)}>Search (up to 10 steps)</button>
         <button onClick={e => this.alignmentSearchButton(e, 50)}>Search (up to 50 steps)</button>
-        <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>
         <a className="hidden"
@@ -643,6 +693,7 @@ class App extends React.Component {
             onChange={e => this.alignDataLoad(e)}
             ref={e=>this.dofileUpload = e}
           />
+        <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <br />
         {scorecomponenttable}

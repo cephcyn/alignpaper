@@ -343,7 +343,26 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
 # TODO-IMPORT column splitting from alignment.ipynb ?
 
 
-# TODO-IMPORT column merging from alignment.ipynb ?
+# Merge the specified column in an alignment with its immediate neighbor to the right
+# TODO-REFERENCE originally from alignment.ipynb
+def mergeColumn(src_alignment, merge_col):
+    merge_col_next = src_alignment.columns[list(src_alignment.columns).index(merge_col)+1]
+    # combine the segment (text)
+    merged_segment = src_alignment[merge_col].map(lambda x: x[0]) + ' ' + src_alignment[merge_col_next].map(lambda x: x[0])
+    merged_segment = merged_segment.map(lambda x: x.strip())
+    # combine the pos (phrase pos)
+    merged_pos = src_alignment[merge_col].map(lambda x: x[1]) + ' ' + src_alignment[merge_col_next].map(lambda x: x[1])
+    merged_pos = merged_pos.map(lambda x: x.strip().split())
+    # TODO ... if we actually use this later, use the parse tree to determine merged phrase POS
+    merged_pos = merged_pos.map(lambda x: '' if len(x)==0 else x[0])
+    # combine the cpos (token / word pos)
+    merged_cpos = src_alignment[merge_col].map(lambda x: x[2]) + src_alignment[merge_col_next].map(lambda x: x[2])
+    # put the result column into our result
+    result = src_alignment.copy()
+    result[merge_col] = list(zip(merged_segment, merged_pos, merged_cpos))
+    del result[merge_col_next]
+    result.columns = [f'txt{i}' for i in range(len(result.columns))]
+    return result
 
 
 # Return true iff the specified shift can occur without causing text collisions

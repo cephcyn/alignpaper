@@ -373,6 +373,43 @@ def api_alignop_deletecol():
     return jsonify(output)
 
 
+@app.route('/api/alignop/mergecol', methods=['POST'])
+def api_alignop_mergecol():
+    print('... called /api/alignop/mergecol ...')
+    # retrieve arguments
+    request_args = request.get_json()
+    try:
+        arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
+        arg_col = int(request_args['col'])
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
+    except:
+        print(traceback.format_exc())
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    align_df = alignutil.mergeColumn(
+        align_df,
+        merge_col=f'txt{arg_col}',
+    )
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        max_row_length=arg_max_row_length,
+        weight_components=arg_score_components
+    )
+    output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
+    return jsonify(output)
+
+
 @app.route('/api/alignscore', methods=['POST'])
 def api_alignscore():
     print('... called /api/alignscore ...')
@@ -495,6 +532,8 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
                             valid_operations += [
                                 ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size)
                             ]
+        # # add merge steps
+        # valid_operations += [('merge', e) for e in align_df.columns[:-1]]
         # initialize the progress variables
         states_calculated = 0
         states_total = len(valid_operations)
@@ -520,8 +559,8 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
                 )
             # elif selected_operation[0]=='split':
             #     operated = alignutil.splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
-            # elif selected_operation[0]=='merge':
-            #     operated = alignutil.mergeCol(align_df, selected_operation[1])
+            elif selected_operation[0]=='merge':
+                operated = alignutil.mergeColumn(align_df, selected_operation[1])
             elif selected_operation[0]=='none':
                 operated = align_df
             else:
@@ -581,6 +620,8 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
                 status_text += f' by {step_operation[3]} cell(s) to the right'
             else:
                 status_text += f' by {-1*step_operation[3]} cell(s) to the left'
+        elif step_operation[0]=='merge':
+            status_text += f'Merged {step_operation[1]} with column to the right'
         else:
             status_text += 'No operation performed'
         status_text += f' (score is now {step_score})'
