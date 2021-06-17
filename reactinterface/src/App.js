@@ -205,6 +205,28 @@ class AlignmentTable extends React.Component {
               checked={locked}
               onChange={this.props.handleColLockChange}
             />
+            <br/>
+            <InsertButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
+            <DeleteButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
+            <MergeButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
           </th>
         );
       }
@@ -238,28 +260,6 @@ class AlignmentTable extends React.Component {
                 rownum={row.id}
                 colnum={index}
                 direction={1}
-                param_score_components={this.props.param_score_components}
-                onAlignmentChange={this.props.onAlignmentChange}
-              />
-              <br/>
-              <InsertButton
-                data={this.props.data}
-                max_row_length={this.props.max_row_length}
-                colnum={index}
-                param_score_components={this.props.param_score_components}
-                onAlignmentChange={this.props.onAlignmentChange}
-              />
-              <DeleteButton
-                data={this.props.data}
-                max_row_length={this.props.max_row_length}
-                colnum={index}
-                param_score_components={this.props.param_score_components}
-                onAlignmentChange={this.props.onAlignmentChange}
-              />
-              <MergeButton
-                data={this.props.data}
-                max_row_length={this.props.max_row_length}
-                colnum={index}
                 param_score_components={this.props.param_score_components}
                 onAlignmentChange={this.props.onAlignmentChange}
               />
