@@ -185,6 +185,49 @@ class MergeButton extends React.Component {
   }
 }
 
+class SplitSingleButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.splitSingleButton = this.splitSingleButton.bind(this);
+  }
+
+  splitSingleButton(e) {
+    e.preventDefault();
+    console.log("Split-Single button clicked!");
+    console.log(e);
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alignment: JSON.stringify(this.props.data),
+        alignment_max_row_length: this.props.max_row_length,
+        col: this.props.colnum,
+        param_score_components: this.props.param_score_components,
+      })
+    };
+    fetch("/api/alignop/splitsinglecol", requestOptions)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
+  }
+
+  render() {
+    // console.log("rerendering SplitSingleButton ...........");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    return (
+      <button
+        className="tight"
+        onClick={this.splitSingleButton}>
+          SS
+      </button>)
+  }
+}
+
 class SplitTrieButton extends React.Component {
   constructor(props) {
     super(props);
@@ -264,6 +307,13 @@ class AlignmentTable extends React.Component {
               onAlignmentChange={this.props.onAlignmentChange}
             />
             <MergeButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
+            <SplitSingleButton
               data={this.props.data}
               max_row_length={this.props.max_row_length}
               colnum={index}

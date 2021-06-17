@@ -341,9 +341,36 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
 
 
 # Split the specified column into two columns, strictly stripping out the endmost token (either left-to-right or right-to-left)
-def splitColumn(src_alignment, split_col, right_align=False):
-    # TODO paste in from impl version in alignment ipynb
+# TODO-REFERENCE originally from alignment.ipynb
+def splitSingleColumn(src_alignment, split_col, right_align=False):
+    # do a quick sanity check to see if splitting would even make sense
+    # there needs to be some column with more than one token that is even splittable
+    if not all(src_alignment[split_col].map(lambda x: len(x[0].split(' '))>1)):
+        return src_alignment
+    # build the new split-col contents
+    split = pd.DataFrame(columns=[f'{split_col}-0', f'{split_col}-1'])
+    text_l = src_alignment[split_col].map(
+        lambda x: ' '.join(x[0].split(' ')[:-1]) if right_align else x[0].split(' ')[0]
+    )
+    text_r = src_alignment[split_col].map(
+        lambda x: x[0].split(' ')[-1] if right_align else ' '.join(x[0].split(' ')[1:])
+    )
+    # TODO ... use the parse tree to determine merged phrase POS?
+    pos_l = src_alignment[split_col].map(
+        lambda x: x[2][:-1] if right_align else [x[2][0]]
+    )
+    pos_r = src_alignment[split_col].map(
+        lambda x: [x[2][-1]] if right_align else x[2][1:]
+    )
+    for index, row in src_alignment.iterrows():
+        split.loc[index] = [
+            (text_l[index], '', pos_l[index]),
+            (text_r[index], '', pos_r[index]),
+        ]
     output = src_alignment.copy()
+    for i in range(len(split.columns)):
+        output.insert(output.columns.get_loc(split_col), f'{split_col}-{i}', split[split.columns[i]])
+    output = output.drop(split_col, 1)
     output.columns = [f'txt{i}' for i in range(len(output.columns))]
     return output
 
