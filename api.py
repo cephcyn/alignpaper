@@ -410,6 +410,44 @@ def api_alignop_mergecol():
     return jsonify(output)
 
 
+@app.route('/api/alignop/splittriecol', methods=['POST'])
+def api_alignop_splittriecol():
+    print('... called /api/alignop/splittriecol ...')
+    # retrieve arguments
+    request_args = request.get_json()
+    try:
+        arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_max_row_length = int(request_args['alignment_max_row_length'])
+        arg_col = int(request_args['col'])
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
+    except:
+        print(traceback.format_exc())
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback':f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    align_df = alignutil.splitTrieColumn(
+        align_df,
+        split_col=f'txt{arg_col}',
+        # right_align=False,
+    )
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        max_row_length=arg_max_row_length,
+        weight_components=arg_score_components
+    )
+    output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
+    return jsonify(output)
+
+
 @app.route('/api/alignscore', methods=['POST'])
 def api_alignscore():
     print('... called /api/alignscore ...')

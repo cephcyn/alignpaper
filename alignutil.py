@@ -340,10 +340,154 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     return output.applymap(lambda x: ('', '', []) if x is np.nan else x), np.amax(scores, axis=None)
 
 
-# TODO-IMPORT column splitting from alignment.ipynb ?
+# Split the specified column into two columns using a word trie (either left-to-right or right-to-left)
+# TODO-REFERENCE originally from alignment.ipynb
+def splitTrieColumn(src_alignment, split_col, right_align=False):
+    # side note, I use "tree" and "trie" interchangeably in these comments lol
+    # define internal helper functions...
+    # Column split step 1: Build word tree with node = word units running right->left
+    # add text to the given trienode (this function edits the given tree_node)
+    def wordTreeHelper(tree_node, text, id_data=None, right_align=False):
+        text = text.strip()
+        # Check for base case
+        if text == '':
+            tree_node[id_data] = id_data
+            return tree_node
+        # Select the right key
+        key = ''
+        if right_align:
+            key = text.split(' ')[-1]
+            text = ' '.join(text.split(' ')[0:-1])
+        else:
+            key = text.split(' ')[0]
+            text = ' '.join(text.split(' ')[1:])
+        # Put the key and text into the trie
+        if key not in tree_node:
+            tree_node[key] = {}
+        tree_node[key] = wordTreeHelper(tree_node[key], text, id_data=id_data, right_align=right_align)
+        return tree_node
+    def wordTree(df, right_align=False):
+        tree = {}
+        for e_id in df.index:
+            tree = wordTreeHelper(tree, df.loc[e_id], id_data=e_id, right_align=right_align)
+        return tree
+    # Column split step 2a: Collapse the suffix trie (merge nodes with only one child)
+    # this function edits the input trie...
+    def wordTreeCollapse(tree, right_align=False):
+        # Collapse children nodes first
+        added_keys = {}
+        removed_keys = []
+        for child in tree:
+            # if child maps to more nodes
+            if tree[child]!=child:
+                tree[child] = wordTreeCollapse(tree[child], right_align=right_align)
+                # Check if the new child node is collapsible
+                if len(tree[child]) == 1:
+                    merge_key = list(tree[child])[0]
+                    if tree[child][merge_key]!=merge_key:
+                        grandchild = list(tree[child])[0]
+                        grandchild_tree = tree[child][grandchild]
+                        # Perform the merge (put into edit queue)
+                        removed_keys.append(child)
+                        if right_align:
+                            added_keys[grandchild + ' ' + child] = grandchild_tree
+                        else:
+                            added_keys[child + ' ' + grandchild] = grandchild_tree
+        # Perform removals
+        for key in removed_keys:
+            tree.pop(key)
+        # Perform additions
+        for key in added_keys:
+            tree[key] = added_keys[key]
+        return tree
+    # Column split step 2b: Compress the suffix trie to only two levels of depth.
+    def wordTreeCompressHelper(tree_node, col_stack=[]):
+        updated_node = {}
+        for k in tree_node:
+            if k==tree_node[k]:
+                # if this reaches a leaf node
+                full_text = ' '.join(col_stack)
+                if full_text not in updated_node:
+                    updated_node[full_text] = {}
+                updated_node[full_text][k]=k
+            else:
+                # if this is not a leaf node
+                sub_node = wordTreeCompressHelper(tree_node[k], col_stack+[k])
+                for sub_text in sub_node:
+                    if sub_text not in updated_node:
+                        updated_node[sub_text] = {}
+                    for sub_value in sub_node[sub_text]:
+                        updated_node[sub_text][sub_value] = sub_node[sub_text][sub_value]
+        return updated_node
+    # this function edits the input trie...
+    def wordTreeCompress(tree, right_align=False):
+        for root in tree:
+            if root!=tree[root]:
+                # compress the 2nd level onwards into a single level!
+                compressed = wordTreeCompressHelper(tree[root])
+                # remove the empty string artifact from compresshelper
+                if '' in compressed:
+                    for k in compressed['']:
+                        compressed[k] = compressed[''][k]
+                    compressed.pop('')
+                tree[root] = compressed
+        return tree
+    # Column split step 3: Output the suffix trie to multiple columns
+    # Calculate how many output columns we'll need
+    # Get the depth of the trie (a trie with one terminal node {0:0} has depth 0)
+    def wordTreeDepth(tree):
+        max_depth = 0
+        for child in tree:
+            if tree[child]!=child:
+                max_depth = max(max_depth, 1 + wordTreeDepth(tree[child]))
+        return max_depth
+    def wordTreeSplit(tree, max_depth, output, so_far=[], right_align=False):
+        for child in tree:
+            if tree[child]==child:
+                # we have hit a base, put in an entry
+                if right_align:
+                    output[child] = ['']*(max_depth - len(so_far)) + so_far
+                else:
+                    output[child] = so_far + ['']*(max_depth - len(so_far))
+            else:
+                # this node has further children!
+                output = wordTreeSplit(
+                    tree[child],
+                    max_depth,
+                    output,
+                    ([child] + so_far) if right_align else (so_far + [child]),
+                    right_align=right_align)
+        return output
+    # Now actually do the split operation
+    tree = wordTree(src_alignment[split_col].map(lambda x: x[0]), right_align=right_align)
+    tree = wordTreeCollapse(tree, right_align=right_align)
+    # squish that tree into only 2 levels because we only want to generate ONE new column max
+    tree = wordTreeCompress(tree)
+    tree_depth = wordTreeDepth(tree)
+    split_data = wordTreeSplit(tree, tree_depth, {}, right_align=right_align)
+    # TODO ... use the parse tree to determine merged phrase POS?
+    pos_info = src_alignment[split_col].map(lambda x: x[2])
+    for k in split_data:
+        pos_i = 0
+        for i in range(len(split_data[k])):
+            chunk_text = split_data[k][i]
+            chunk_len = 0 if len(chunk_text)==0 else len(chunk_text.split(' '))
+            split_data[k][i] = (chunk_text, '', pos_info[k][pos_i:pos_i+chunk_len])
+            pos_i += chunk_len
+    split = pd.DataFrame(columns=[f'{split_col}-{i}' for i in range(tree_depth)])
+    for id in split_data:
+        split.loc[id] = split_data[id]
+    # combine the split results back into the rest of our original input data!
+    output = src_alignment.copy()
+    for i in range(len(split.columns)):
+        output.insert(output.columns.get_loc(split_col), f'{split_col}-{i}', split[split.columns[i]])
+    output = output.drop(split_col, 1)
+    output.columns = [f'txt{i}' for i in range(len(output.columns))]
+    return output
 
 
-# Merge the specified column in an alignment with its immediate neighbor to the right
+# Merge the specified column in an alignment with its immediate neighbor to the right.
+# Does nothing if the given column is already to the rightmost
 # TODO-REFERENCE originally from alignment.ipynb
 def mergeColumn(src_alignment, merge_col):
     merge_col_next = src_alignment.columns[list(src_alignment.columns).index(merge_col)+1]
@@ -353,7 +497,7 @@ def mergeColumn(src_alignment, merge_col):
     # combine the pos (phrase pos)
     merged_pos = src_alignment[merge_col].map(lambda x: x[1]) + ' ' + src_alignment[merge_col_next].map(lambda x: x[1])
     merged_pos = merged_pos.map(lambda x: x.strip().split())
-    # TODO ... if we actually use this later, use the parse tree to determine merged phrase POS
+    # TODO ... use the parse tree to determine merged phrase POS?
     merged_pos = merged_pos.map(lambda x: '' if len(x)==0 else x[0])
     # combine the cpos (token / word pos)
     merged_cpos = src_alignment[merge_col].map(lambda x: x[2]) + src_alignment[merge_col_next].map(lambda x: x[2])
