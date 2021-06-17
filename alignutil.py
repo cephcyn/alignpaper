@@ -340,6 +340,13 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
     return output.applymap(lambda x: ('', '', []) if x is np.nan else x), np.amax(scores, axis=None)
 
 
+# Split the specified column into two columns, strictly stripping out the endmost token (either left-to-right or right-to-left)
+def splitColumn(src_alignment, split_col, right_align=False):
+    # TODO paste in from impl version in alignment ipynb
+    output = src_alignment.copy()
+    output.columns = [f'txt{i}' for i in range(len(output.columns))]
+    return output
+
 # Split the specified column into two columns using a word trie (either left-to-right or right-to-left)
 # TODO-REFERENCE originally from alignment.ipynb
 def splitTrieColumn(src_alignment, split_col, right_align=False):
@@ -401,7 +408,7 @@ def splitTrieColumn(src_alignment, split_col, right_align=False):
             tree[key] = added_keys[key]
         return tree
     # Column split step 2b: Compress the suffix trie to only two levels of depth.
-    def wordTreeCompressHelper(tree_node, col_stack=[]):
+    def wordTreeCompressHelper(tree_node, col_stack=[], right_align=False):
         updated_node = {}
         for k in tree_node:
             if k==tree_node[k]:
@@ -412,7 +419,11 @@ def splitTrieColumn(src_alignment, split_col, right_align=False):
                 updated_node[full_text][k]=k
             else:
                 # if this is not a leaf node
-                sub_node = wordTreeCompressHelper(tree_node[k], col_stack+[k])
+                sub_node = wordTreeCompressHelper(
+                    tree_node[k],
+                    [k]+col_stack if right_align else col_stack+[k],
+                    right_align=right_align
+                )
                 for sub_text in sub_node:
                     if sub_text not in updated_node:
                         updated_node[sub_text] = {}
@@ -462,7 +473,7 @@ def splitTrieColumn(src_alignment, split_col, right_align=False):
     tree = wordTree(src_alignment[split_col].map(lambda x: x[0]), right_align=right_align)
     tree = wordTreeCollapse(tree, right_align=right_align)
     # squish that tree into only 2 levels because we only want to generate ONE new column max
-    tree = wordTreeCompress(tree)
+    tree = wordTreeCompress(tree, right_align=right_align)
     tree_depth = wordTreeDepth(tree)
     split_data = wordTreeSplit(tree, tree_depth, {}, right_align=right_align)
     # TODO ... use the parse tree to determine merged phrase POS?
