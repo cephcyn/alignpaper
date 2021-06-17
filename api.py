@@ -419,6 +419,7 @@ def api_alignop_splitsinglecol():
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
+        arg_right_align = bool(request_args['right_align'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
         print(traceback.format_exc())
@@ -430,7 +431,7 @@ def api_alignop_splitsinglecol():
     align_df = alignutil.splitSingleColumn(
         align_df,
         split_col=f'txt{arg_col}',
-        # right_align=False,
+        right_align=arg_right_align,
     )
     output = alignutil.alignment_to_jsondict(align_df)
     # get alignment score
@@ -457,6 +458,7 @@ def api_alignop_splittriecol():
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
         arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
+        arg_right_align = bool(request_args['right_align'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
         print(traceback.format_exc())
@@ -468,7 +470,7 @@ def api_alignop_splittriecol():
     align_df = alignutil.splitTrieColumn(
         align_df,
         split_col=f'txt{arg_col}',
-        # right_align=False,
+        right_align=arg_right_align,
     )
     output = alignutil.alignment_to_jsondict(align_df)
     # get alignment score

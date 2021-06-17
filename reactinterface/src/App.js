@@ -202,6 +202,7 @@ class SplitSingleButton extends React.Component {
         alignment: JSON.stringify(this.props.data),
         alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
+        right_align: this.props.right_align,
         param_score_components: this.props.param_score_components,
       })
     };
@@ -219,11 +220,18 @@ class SplitSingleButton extends React.Component {
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
+    let contents = "SS";
+    if (this.props.right_align) {
+      contents += "R"
+    } else {
+      contents += "L"
+    }
+
     return (
       <button
         className="tight"
         onClick={this.splitSingleButton}>
-          SS
+          {contents}
       </button>)
   }
 }
@@ -245,6 +253,7 @@ class SplitTrieButton extends React.Component {
         alignment: JSON.stringify(this.props.data),
         alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
+        right_align: this.props.right_align,
         param_score_components: this.props.param_score_components,
       })
     };
@@ -262,11 +271,18 @@ class SplitTrieButton extends React.Component {
     // console.log("props:", this.props);
     // console.log("state:", this.state);
 
+    let contents = "TS";
+    if (this.props.right_align) {
+      contents += "R"
+    } else {
+      contents += "L"
+    }
+
     return (
       <button
         className="tight"
         onClick={this.splitTrieButton}>
-          TS
+          {contents}
       </button>)
   }
 }
@@ -313,10 +329,29 @@ class AlignmentTable extends React.Component {
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
             />
+            <br/>
             <SplitSingleButton
               data={this.props.data}
               max_row_length={this.props.max_row_length}
               colnum={index}
+              right_align={false}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
+            <SplitSingleButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              right_align={true}
+              param_score_components={this.props.param_score_components}
+              onAlignmentChange={this.props.onAlignmentChange}
+            />
+            <br/>
+            <SplitTrieButton
+              data={this.props.data}
+              max_row_length={this.props.max_row_length}
+              colnum={index}
+              right_align={false}
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
             />
@@ -324,6 +359,7 @@ class AlignmentTable extends React.Component {
               data={this.props.data}
               max_row_length={this.props.max_row_length}
               colnum={index}
+              right_align={true}
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
             />
