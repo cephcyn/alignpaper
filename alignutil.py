@@ -213,7 +213,9 @@ def alignRowMajorLocal(align_a, align_b, embed_model, use_types=False, remove_em
             scaled_edits_sum = 0
             for phrase_a in [p for p in text_a if len(p) != 0]:
                 for phrase_b in [p for p in text_b if len(p) != 0]:
-                    scaled_edits_sum += edit_distance(phrase_a,phrase_b) / max(len(phrase_a), len(phrase_b))
+                    # normalize to be in the range of [0,1]
+                    # ref https://stackoverflow.com/questions/45783385/normalizing-the-edit-distance
+                    scaled_edits_sum += edit_distance(phrase_a, phrase_b) / max(len(phrase_a), len(phrase_b))
             score = 60 * (1 - (scaled_edits_sum / (len(text_a) * len(text_b))))
         # add a component based on phrase type if that flag is set
         # TODO improve this?; this currently just returns -inf if mismatch of type sets
