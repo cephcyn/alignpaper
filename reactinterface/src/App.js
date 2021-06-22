@@ -441,6 +441,14 @@ class App extends React.Component {
       inputvalue: "",
       loading: false,
       textstatus: "",
+      history: [{
+        // default empty values, this is ugly and redundant but I'm not going to streamline it
+        alignment: [],
+        alignment_cols_locked: [],
+        alignment_score: null,
+        alignment_score_components: null,
+      }],
+      history_current: 0,
     };
     this.handleTextChange = this.handleTextChange.bind(this);
     this.handleAlignmentChange = this.handleAlignmentChange.bind(this);
@@ -457,6 +465,10 @@ class App extends React.Component {
     this.alignDataSave = this.alignDataSave.bind(this);
     this.alignDataLoadClick = this.alignDataLoadClick.bind(this);
     this.alignDataLoad = this.alignDataLoad.bind(this);
+    this.historyUndo = this.historyUndo.bind(this);
+    this.historyRedo = this.historyRedo.bind(this);
+    this.historyAppend = this.historyAppend.bind(this);
+    this.historyReset = this.historyReset.bind(this);
   }
 
   handleTextChange(e) {
@@ -465,21 +477,35 @@ class App extends React.Component {
 
   handleAlignmentChange(e) {
     // console.log('in handleAlignmentChange');
+    let updated_alignment_cols_locked = this.state.alignment_cols_locked;
     if (
       (e.alignment.length > 0)
       && (e.alignment[0]['txt'].length !== this.state.alignment[0]['txt'].length)
     ) {
-      this.setState({ alignment_cols_locked: new Array(e.alignment[0]['txt'].length).fill(false) });
+      updated_alignment_cols_locked = new Array(e.alignment[0]['txt'].length).fill(false);
+      this.setState({ alignment_cols_locked: updated_alignment_cols_locked });
     }
     this.setState({ alignment: e.alignment });
+    let updated_alignment_score = this.state.alignment_score;
     if ('alignment_score' in e) {
-      this.setState({ alignment_score: e.alignment_score });
+      updated_alignment_score = e.alignment_score;
+      this.setState({ alignment_score: updated_alignment_score });
     }
+    let updated_alignment_score_components = this.state.alignment_score_components;
     if ('alignment_score_components' in e) {
-      this.setState({ alignment_score_components: e.alignment_score_components });
+      updated_alignment_score_components = e.alignment_score_components;
+      this.setState({ alignment_score_components: updated_alignment_score_components });
     }
     // // automatically get the new alignment score and components
     // this.alignmentScore(e);
+
+    // update history
+    this.historyAppend({
+      alignment: e.alignment,
+      alignment_cols_locked: updated_alignment_cols_locked,
+      alignment_score: updated_alignment_score,
+      alignment_score_components: updated_alignment_score_components
+    });
   }
 
   handleColLockChange(e) {
@@ -488,8 +514,19 @@ class App extends React.Component {
       // this is an awful hack for deep cloning this list
       let updated = JSON.parse(JSON.stringify(prevState.alignment_cols_locked));
       updated[e.target.name] = !updated[e.target.name];
+
+      // update history
+      this.historyAppend({
+        alignment: this.state.alignment,
+        alignment_cols_locked: updated,
+        alignment_score: this.state.alignment_score,
+        alignment_score_components: this.state.alignment_score_components
+      });
+
       return { alignment_cols_locked: updated };
     });
+
+
   }
 
   handleParamScoreComponentsChange(e, paramidx) {
@@ -516,6 +553,8 @@ class App extends React.Component {
         param_score_components: this.state.param_score_components,
       })
     };
+    // clear history when we submit a raw alignment request
+    this.historyReset();
     fetch("/api/textalign", requestOptions)
       .then((response) => {
         return response.json();
@@ -638,6 +677,14 @@ class App extends React.Component {
               loading: false,
               textstatus: data['status'],
             });
+
+            // update history
+            this.historyAppend({
+              alignment: data['alignment'],
+              alignment_cols_locked: this.state.alignment_cols_locked,
+              alignment_score: data['alignment_score'],
+              alignment_score_components: data['alignment_score_components']
+            });
           } else {
             // failure?
             this.setState({
@@ -667,6 +714,8 @@ class App extends React.Component {
     const output = JSON.stringify({
       alignment: this.state.alignment,
       alignment_cols_locked: this.state.alignment_cols_locked,
+      alignment_score: this.state.alignment_score,
+      alignment_score_components: this.state_alignment_score_components,
       alignment_max_row_length: this.state.alignment_max_row_length,
       parse_constituency: this.state.parse_constituency,
     });
@@ -695,11 +744,93 @@ class App extends React.Component {
       const fileContents = e.target.result;
       const fileContentsParse = JSON.parse(fileContents);
       this.setState(fileContentsParse);
+      this.setState({
+        textstatus: 'Loaded alignment from save file',
+      });
+
+      // set history purely to loaded contents when we load in from a saved alignment
+      this.historyReset({
+        alignment: fileContentsParse.alignment,
+        alignment_cols_locked: fileContentsParse.alignment_cols_locked,
+        alignment_score: fileContentsParse.alignment_score,
+        alignment_score_components: fileContentsParse.alignment_score_components
+      });
     }
 
     fileloaded = fileloaded.bind(this);
     reader.onload = fileloaded;
     reader.readAsText(fileObj);
+  }
+
+  historyUndo(e) {
+    e.preventDefault();
+    console.log("undo button clicked!");
+    this.setState({
+      alignment: this.state.history[this.state.history_current - 1].alignment,
+      alignment_cols_locked: this.state.history[this.state.history_current - 1].alignment_cols_locked,
+      alignment_score: this.state.history[this.state.history_current - 1].alignment_score,
+      alignment_score_components: this.state.history[this.state.history_current - 1].alignment_score_components,
+      history_current: this.state.history_current - 1
+    });
+  }
+
+  historyRedo(e) {
+    e.preventDefault();
+    console.log("redo button clicked!");
+    this.setState({
+      alignment: this.state.history[this.state.history_current + 1].alignment,
+      alignment_cols_locked: this.state.history[this.state.history_current + 1].alignment_cols_locked,
+      alignment_score: this.state.history[this.state.history_current + 1].alignment_score,
+      alignment_score_components: this.state.history[this.state.history_current + 1].alignment_score_components,
+      history_current: this.state.history_current + 1
+    });
+  }
+
+  historyAppend(checkpoint) {
+    console.log("attempting to append to history!");
+    // first check if an append actually should be done
+    // e.g. if a shift makes no change to the alignment at all, there should be no step added to history
+    // TODO implement the check
+    if (false) {
+      // we don't need to do an append...
+      console.log("found that no append was necessary!");
+    } else {
+      // actually do the append and update current index tracker
+      if (this.state.history.length === this.state.history_current) {
+        // we are at the tail end of history, just append
+        this.setState({
+          history: this.state.history.concat([checkpoint]),
+          history_current: this.state.history_current + 1
+        });
+      } else {
+        // we are in the midpoint of history, cut off the tail bit first
+        this.setState({
+          history: this.state.history.slice(0, this.state.history_current + 1).concat([checkpoint]),
+          history_current: this.state.history_current + 1
+        });
+      }
+    }
+  }
+
+  historyReset(checkpoint) {
+    console.log("resetting history!");
+    // input value is the state to reset to; if non-null then use that state
+    if (checkpoint) {
+      this.setState({
+        history: [checkpoint]
+      });
+    } else {
+      // reset to empty state
+      this.setState({
+        history: [{
+          alignment: [],
+          alignment_cols_locked: [],
+          alignment_score: null,
+          alignment_score_components: null,
+        }]
+      });
+    }
+    this.setState({ history_current: 0 });
   }
 
   render() {
@@ -801,6 +932,10 @@ class App extends React.Component {
       </table>
     );
 
+    // do checks to see if undo and redo are legal with the history and current state
+    let historyUndoLegal = this.state.history_current > 0;
+    let historyRedoLegal = this.state.history.length > this.state.history_current + 1;
+
     return (
       <div className="App">
         <textarea
@@ -815,6 +950,9 @@ class App extends React.Component {
         <button onClick={e => this.alignmentSearchButton(e, 1)}>Search (1 step)</button>
         <button onClick={e => this.alignmentSearchButton(e, 10)}>Search (up to 10 steps)</button>
         <button onClick={e => this.alignmentSearchButton(e, 50)}>Search (up to 50 steps)</button>
+        <br />
+        <button onClick={this.historyUndo} disabled={!historyUndoLegal}>Undo</button>
+        <button onClick={this.historyRedo} disabled={!historyRedoLegal}>Redo</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>
         <a className="hidden"
@@ -832,17 +970,25 @@ class App extends React.Component {
         <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
         <br />
         <br />
-        {scorecomponenttable}
-        {movedistribtable}
         <hr />
         {aligntable}
         {loadingspinner}
         <p className="preservenewline">{this.state.textstatus}</p>
         <hr />
-        <p>alignment_score is...</p>
-        <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
-        <p>alignment_score_components is...</p>
-        <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
+        <table style={{width: "100%"}}>
+          <tbody><tr>
+            <td>
+              <p>alignment_score is...</p>
+              <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
+              <p>alignment_score_components is...</p>
+              <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
+            </td>
+            <td>
+              {scorecomponenttable}
+              {movedistribtable}
+            </td>
+          </tr></tbody>
+        </table>
         <hr />
         <p>alignment_max_row_length is...</p>
         <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
