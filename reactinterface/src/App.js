@@ -437,6 +437,8 @@ class App extends React.Component {
       param_score_components_default: [0.2, 0.2, 1, 0, 0, 0],
       param_move_distrib: [1, 1],
       param_move_distrib_default: [1, 1],
+      param_search_cutoff: 2,
+      param_search_cutoff_default: 2,
       parse_constituency: {},
       inputvalue: "",
       loading: false,
@@ -455,6 +457,7 @@ class App extends React.Component {
     this.handleColLockChange = this.handleColLockChange.bind(this);
     this.handleParamScoreComponentsChange = this.handleParamScoreComponentsChange.bind(this);
     this.handleParamMoveDistribChange = this.handleParamMoveDistribChange.bind(this);
+    this.handleParamSearchCutoffChange = this.handleParamSearchCutoffChange.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
@@ -539,6 +542,10 @@ class App extends React.Component {
     let modified = JSON.parse(JSON.stringify(this.state.param_move_distrib));
     modified[paramidx] = e.target.value;
     this.setState({ param_move_distrib: modified });
+  }
+
+  handleParamSearchCutoffChange(e) {
+    this.setState({ param_search_cutoff: e.target.value });
   }
 
   alignRawText(e) {
@@ -648,6 +655,7 @@ class App extends React.Component {
         greedysteps: JSON.stringify(numsteps),
         param_score_components: this.state.param_score_components,
         param_move_distrib: this.state.param_move_distrib,
+        param_search_cutoff: this.state.param_search_cutoff,
       })
     };
     fetch("/api/alignsearch", requestOptions)
@@ -860,7 +868,7 @@ class App extends React.Component {
       aligntable = <br />
     }
 
-    // build the score component weighting control table
+    // build the score component weighting hyperparameter control table
     let scorecomponenttable = [
       "alignment length",
       "column filled-ness",
@@ -898,7 +906,7 @@ class App extends React.Component {
       </table>
     );
 
-    // build the search step weighting control table
+    // build the search step probability hyperparameter control table
     let movedistribtable = [
       "greedy",
       "random",
@@ -928,6 +936,39 @@ class App extends React.Component {
       <table>
         <tbody>
           {movedistribtable}
+        </tbody>
+      </table>
+    );
+
+    // build the search step cutoff hyperparameter table
+    let searchcutofftable = [
+      "greedy step cutoff",
+    ].map((component_name, index) => {
+      return (
+        <tr key={index}>
+          <td>
+            {component_name}
+          </td>
+          <td>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              step="1"
+              value={this.state.param_search_cutoff}
+              onChange={e => this.handleParamSearchCutoffChange(e)}
+            />
+          </td>
+          <td>
+            {this.state.param_search_cutoff}
+          </td>
+        </tr>
+      );
+    });
+    searchcutofftable = (
+      <table>
+        <tbody>
+          {searchcutofftable}
         </tbody>
       </table>
     );
@@ -986,6 +1027,7 @@ class App extends React.Component {
             <td>
               {scorecomponenttable}
               {movedistribtable}
+              {searchcutofftable}
             </td>
           </tr></tbody>
         </table>

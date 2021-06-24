@@ -520,7 +520,15 @@ def api_alignscore():
 
 
 @celery.task(bind=True)
-def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols_locked, arg_greedysteps, arg_score_components, arg_move_distrib):
+def task_alignsearch(
+        self,
+        arg_alignment,
+        arg_max_row_length,
+        arg_alignment_cols_locked,
+        arg_greedysteps,
+        arg_score_components,
+        arg_move_distrib,
+        arg_none_optimal_cutoff):
     align_df = alignutil.jsondict_to_alignment(arg_alignment)
     # set some temporary variable names...
     spacy_model = sp
@@ -531,7 +539,7 @@ def task_alignsearch(self, arg_alignment, arg_max_row_length, arg_alignment_cols
     term_weight_func = None
     weight_components = None
     move_distrib = arg_move_distrib
-    none_optimal_cutoff = 2
+    none_optimal_cutoff = arg_none_optimal_cutoff
     # initialize move selection resources
     random.seed()
     none_optimal_n = 0
@@ -779,6 +787,7 @@ def api_alignsearch():
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
         arg_score_components = [float(e) for e in request_args['param_score_components']]
         arg_move_distrib = [int(e) for e in request_args['param_move_distrib']]
+        arg_none_optimal_cutoff = int(json.loads(request_args['param_search_cutoff']))
         #if ('param_move_distrib' in request_args)
     except:
         print(traceback.format_exc())
@@ -793,6 +802,7 @@ def api_alignsearch():
         'arg_greedysteps':arg_greedysteps,
         'arg_score_components':arg_score_components,
         'arg_move_distrib':[('greedy', arg_move_distrib[0]), ('randomwalk', arg_move_distrib[1])],
+        'arg_none_optimal_cutoff':arg_none_optimal_cutoff,
     })
     return jsonify({
         'location': url_for('taskstatus_alignsearch', task_id=task.id)
