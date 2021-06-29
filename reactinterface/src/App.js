@@ -655,7 +655,7 @@ class App extends React.Component {
         greedysteps: JSON.stringify(numsteps),
         param_score_components: this.state.param_score_components,
         param_move_distrib: this.state.param_move_distrib,
-        param_search_cutoff: this.state.param_search_cutoff,
+        param_search_cutoff: JSON.stringify(this.state.param_search_cutoff),
       })
     };
     fetch("/api/alignsearch", requestOptions)
