@@ -594,7 +594,7 @@ class App extends React.Component {
               textstatus: "",
             });
             // and automatically chain in an alignment search to finetune it a bit...
-            this.alignmentSearch(null, 50);
+            this.alignmentSearch(null, 10);
           } else {
             // failure?
             this.setState({
