@@ -1019,10 +1019,9 @@ class App extends React.Component {
         <table style={{width: "100%"}}>
           <tbody><tr>
             <td>
-              <p>alignment_score is...</p>
-              <p>{this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
-              <p>alignment_score_components is...</p>
-              <p>{this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
+              <p>overall alignment score = {this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
+              <p>score components breakdown = {this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
+              <p>longest single input = {this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
             </td>
             <td>
               {scorecomponenttable}
@@ -1031,9 +1030,6 @@ class App extends React.Component {
             </td>
           </tr></tbody>
         </table>
-        <hr />
-        <p>alignment_max_row_length is...</p>
-        <p>{this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
         <hr />
         <img src={logo} className="App-logo" alt="logo" />
       </div>
