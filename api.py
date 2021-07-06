@@ -586,9 +586,9 @@ def task_alignsearch(
         )
         # calculate the step (alignment operation) space...
         valid_operations = []
-        # add none step
+        # add none step: ('none', 0)
         valid_operations += [('none', 0)]
-        # add shift steps
+        # add shift steps: ('shift', [row1_name, row2_name, ...], column_name, distance, shift_size)
         for col_i in range(len(align_df.columns)):
             # only shift from this col if it is not locked...
             if not arg_alignment_cols_locked[col_i]:
@@ -625,7 +625,8 @@ def task_alignsearch(
                             valid_operations += [
                                 ('shift', row_clumps[row_clump_word], align_df.columns[col_i], distance, shift_size)
                             ]
-        # # add merge steps
+        # # add split steps: TODO?
+        # # add merge steps: ('merge', column_name)
         # valid_operations += [('merge', e) for e in align_df.columns[:-1]]
         # initialize the progress variables
         states_calculated = 0
@@ -650,7 +651,7 @@ def task_alignsearch(
                     selected_operation[3],
                     shift_size=selected_operation[4],
                 )
-            # elif selected_operation[0]=='split':
+            # elif selected_operation[0]=='split': # TODO this line is nonfunctional
             #     operated = alignutil.splitCol(align_df, selected_operation[1], right_align=selected_operation[2])
             elif selected_operation[0]=='merge':
                 operated = alignutil.mergeColumn(align_df, selected_operation[1])
@@ -688,7 +689,6 @@ def task_alignsearch(
         if move == 'greedy':
             # pick the candidate with best score
             step_df, step_score, step_operation, step_scorecomponents = candidates[0]
-            print(f'greedy step chose {step_operation} with score {step_score}')
         elif move == 'randomwalk':
             selected = random.randint(0, len(candidates)-1)
             step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
@@ -696,29 +696,30 @@ def task_alignsearch(
                 # randomwalk isn't allowed to take 'None' move :P
                 selected = random.randint(0, len(candidates)-1)
                 step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
-            print(f'random step chose {step_operation} with score {step_score}')
-        # check if this step is the new optimal step
+        print(f'{move} step chose {step_operation} with score {step_score}')
+        # check if this step is the new optimal step; save it if it is
         if step_score > optimal_score:
             optimal_score = step_score
             optimal_scorecomponents = step_scorecomponents
             optimal_df = step_df
             optimal_step_i = step_number
         # generate a nice readable status text
-        status_text = f'{move} - '
+        status_text = f'{move} : '
         if (step_operation[0]=='shift') and (step_operation[3]!=0):
-            status_text += f'Shifted {step_operation[4]} cells(s)'
+            status_text += f'Shifted {step_operation[4]} cell(s)'
             status_text += f' starting from column {step_operation[2]}'
             status_text += f' in rows {step_operation[1]}'
-            if step_operation[3]>0:
-                status_text += f' by {step_operation[3]} cell(s) to the right'
-            else:
-                status_text += f' by {-1*step_operation[3]} cell(s) to the left'
+            status_text += f' by {(step_operation[3])} cell(s) to the right'
+            # "0 cells to the right" would be no shift
+            # negative value would be left shift
         elif step_operation[0]=='merge':
             status_text += f'Merged {step_operation[1]} with column to the right'
-        else:
+        # elif step_operation[0]=='split':
+        #     pass # TODO nonfunctiional
+        else: # elif step_operation[0]=='none':
             status_text += 'No operation performed'
-        status_text += f' (score is now {step_score})'
-        status_text += f' (subscores are {step_scorecomponents})'
+        status_text += f' (score {step_score})'
+        status_text += f' (components {step_scorecomponents})'
         operation_history.append(status_text)
         # break out of this loop if we have hit the limit on # of none-optimals
         if none_optimal_n >= none_optimal_cutoff:
@@ -726,16 +727,20 @@ def task_alignsearch(
             break
         # set align_df to step_df to ready for next greedy step
         align_df = step_df
-    # only keep the slice of operation history up until the optimal state
-    operation_history = operation_history[:optimal_step_i+1]
+    # # only keep the slice of operation history up until the optimal state
+    # operation_history = operation_history[:optimal_step_i+1]
     # prepend initial score info to the status
     operation_history = [
-        f'Initial alignment score {initial_singlescore} (components {initial_components})'
+        f'Initial alignment (score {initial_singlescore}) (components {initial_components})'
     ] + operation_history
     # clean up operation_history to have step numbers
     operation_history = [
         f'({i}/{len(operation_history)-1}): {operation_history[i]}'
         for i in range(len(operation_history))
+    ]
+    # add note on which step we hit the optimal state at
+    operation_history = operation_history + [
+        f'Optimal state selected at step {optimal_step_i}'
     ]
     return {
         'status': '\n'.join(operation_history),
