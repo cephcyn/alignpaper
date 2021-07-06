@@ -141,7 +141,7 @@ def task_textalign(self, arg_input, arg_score_components):
             }
         )
     # compute max_row_length to be used for this set of texts
-    max_row_length = max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
+    max_row_length = alignutil.maxRowLength(align_df)
     output['alignment_max_row_length'] = max_row_length
     # convert the final alignment output to an outputtable format
     output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
@@ -183,12 +183,12 @@ def taskstatus_textalign(task_id):
             response['parse_constituency'] = task.info['parse_constituency']
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
+        if 'alignment_max_row_length' in task.info:
+            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
         if 'alignment_score' in task.info:
             response['alignment_score'] = task.info['alignment_score']
         if 'alignment_score_components' in task.info:
             response['alignment_score_components'] = task.info['alignment_score_components']
-        if 'alignment_max_row_length' in task.info:
-            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
     else:
         # if we are in the failure state...
         # something went wrong in the background job
@@ -292,6 +292,7 @@ def api_alignop_shift():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components,
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -331,6 +332,7 @@ def api_alignop_insertcol():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components,
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -339,6 +341,7 @@ def api_alignop_insertcol():
 @app.route('/api/alignop/deletecol', methods=['POST'])
 def api_alignop_deletecol():
     print('... called /api/alignop/deletecol ...')
+    # TODO should it be legal to delete a column when there is text inside?
     # retrieve arguments
     request_args = request.get_json()
     try:
@@ -368,6 +371,7 @@ def api_alignop_deletecol():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -405,6 +409,7 @@ def api_alignop_mergecol():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -444,6 +449,7 @@ def api_alignop_splitsinglecol():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -483,6 +489,7 @@ def api_alignop_splittriecol():
         max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
+    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -733,6 +740,7 @@ def task_alignsearch(
     return {
         'status': '\n'.join(operation_history),
         'alignment': alignutil.alignment_to_jsondict(optimal_df)['alignment'],
+        'alignment_max_row_length': alignutil.maxRowLength(align_df),
         'alignment_score': optimal_score,
         'alignment_score_components': list(optimal_scorecomponents)
     }
@@ -759,6 +767,8 @@ def taskstatus_alignsearch(task_id):
         }
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
+        if 'alignment_max_row_length' in task.info:
+            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
         if 'alignment_score' in task.info:
             response['alignment_score'] = task.info['alignment_score']
         if 'alignment_score_components' in task.info:

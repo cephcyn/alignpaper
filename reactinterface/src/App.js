@@ -447,6 +447,7 @@ class App extends React.Component {
         // default empty values, this is ugly and redundant but I'm not going to streamline it
         alignment: [],
         alignment_cols_locked: [],
+        alignment_max_row_length: null,
         alignment_score: null,
         alignment_score_components: null,
       }],
@@ -480,6 +481,7 @@ class App extends React.Component {
 
   handleAlignmentChange(e) {
     // console.log('in handleAlignmentChange');
+    // handle col lock first
     let updated_alignment_cols_locked = this.state.alignment_cols_locked;
     if (
       (e.alignment.length > 0)
@@ -488,12 +490,21 @@ class App extends React.Component {
       updated_alignment_cols_locked = new Array(e.alignment[0]['txt'].length).fill(false);
       this.setState({ alignment_cols_locked: updated_alignment_cols_locked });
     }
+    // handle the alignment itself
     this.setState({ alignment: e.alignment });
+    // handle alignment_max_row_length
+    let updated_alignment_max_row_length = this.state.alignment_max_row_length;
+    if ('alignment_max_row_length' in e) {
+      updated_alignment_max_row_length = e.alignment_max_row_length;
+      this.setState({ alignment_score: updated_alignment_max_row_length });
+    }
+    // handle alignment_score
     let updated_alignment_score = this.state.alignment_score;
     if ('alignment_score' in e) {
       updated_alignment_score = e.alignment_score;
       this.setState({ alignment_score: updated_alignment_score });
     }
+    // handle alignment_score_components
     let updated_alignment_score_components = this.state.alignment_score_components;
     if ('alignment_score_components' in e) {
       updated_alignment_score_components = e.alignment_score_components;
@@ -506,6 +517,7 @@ class App extends React.Component {
     this.historyAppend({
       alignment: e.alignment,
       alignment_cols_locked: updated_alignment_cols_locked,
+      alignment_max_row_length: updated_alignment_max_row_length,
       alignment_score: updated_alignment_score,
       alignment_score_components: updated_alignment_score_components
     });
@@ -522,6 +534,7 @@ class App extends React.Component {
       this.historyAppend({
         alignment: this.state.alignment,
         alignment_cols_locked: updated,
+        alignment_max_row_length: this.state.alignment_max_row_length,
         alignment_score: this.state.alignment_score,
         alignment_score_components: this.state.alignment_score_components
       });
@@ -677,9 +690,12 @@ class App extends React.Component {
         console.log(data);
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
           if ('alignment' in data) {
+            console.log('finished search!...');
+            console.log(data);
             // success!
             this.setState({
               alignment: data['alignment'],
+              alignment_max_row_length: data['alignment_max_row_length'],
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
               loading: false,
@@ -690,6 +706,7 @@ class App extends React.Component {
             this.historyAppend({
               alignment: data['alignment'],
               alignment_cols_locked: this.state.alignment_cols_locked,
+              alignment_max_row_length: data['alignment_max_row_length'],
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components']
             });
@@ -722,9 +739,9 @@ class App extends React.Component {
     const output = JSON.stringify({
       alignment: this.state.alignment,
       alignment_cols_locked: this.state.alignment_cols_locked,
+      alignment_max_row_length: this.state.alignment_max_row_length,
       alignment_score: this.state.alignment_score,
       alignment_score_components: this.state_alignment_score_components,
-      alignment_max_row_length: this.state.alignment_max_row_length,
       parse_constituency: this.state.parse_constituency,
     });
     const blob = new Blob([output]);
@@ -760,6 +777,7 @@ class App extends React.Component {
       this.historyReset({
         alignment: fileContentsParse.alignment,
         alignment_cols_locked: fileContentsParse.alignment_cols_locked,
+        alignment_max_row_length: fileContentsParse.state.alignment_max_row_length,
         alignment_score: fileContentsParse.alignment_score,
         alignment_score_components: fileContentsParse.alignment_score_components
       });
@@ -776,6 +794,7 @@ class App extends React.Component {
     this.setState({
       alignment: this.state.history[this.state.history_current - 1].alignment,
       alignment_cols_locked: this.state.history[this.state.history_current - 1].alignment_cols_locked,
+      alignment_max_row_length: this.state.history[this.state.history_current - 1].alignment_max_row_length,
       alignment_score: this.state.history[this.state.history_current - 1].alignment_score,
       alignment_score_components: this.state.history[this.state.history_current - 1].alignment_score_components,
       history_current: this.state.history_current - 1
@@ -788,6 +807,7 @@ class App extends React.Component {
     this.setState({
       alignment: this.state.history[this.state.history_current + 1].alignment,
       alignment_cols_locked: this.state.history[this.state.history_current + 1].alignment_cols_locked,
+      alignment_max_row_length: this.state.history[this.state.history_current + 1].alignment_max_row_length,
       alignment_score: this.state.history[this.state.history_current + 1].alignment_score,
       alignment_score_components: this.state.history[this.state.history_current + 1].alignment_score_components,
       history_current: this.state.history_current + 1
@@ -833,6 +853,7 @@ class App extends React.Component {
         history: [{
           alignment: [],
           alignment_cols_locked: [],
+          alignment_max_row_length: null,
           alignment_score: null,
           alignment_score_components: null,
         }]
@@ -1021,7 +1042,7 @@ class App extends React.Component {
             <td>
               <p>overall alignment score = {this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
               <p>score components breakdown = {this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
-              <p>longest single input = {this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
+              <p>cells in longest row = {this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
             </td>
             <td>
               {scorecomponenttable}

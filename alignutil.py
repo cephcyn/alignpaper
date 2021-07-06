@@ -868,6 +868,12 @@ def scoreTermListColumnCount(align_df, term_list, term_weights=None):
     return np.dot(scores, term_weights)
 
 
+# calculate the maximum row length of an alignment
+# (the number of filled cells in the row with the most filled cells)
+def maxRowLength(align_df):
+    return max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
+
+
 # calculate an alignment overall score
 # TODO-REFERENCE originally from alignment.ipynb
 def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
@@ -884,7 +890,7 @@ def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed
             print('scoreAlignment: self-generating max_row_length')
             # traceback.print_stack(limit=5)
             # set max_row_length to max(number of cells occupied with text) over all rows in align_df
-            max_row_length = max([len([1 for e in align_df.loc[i] if len(e[0].strip())!=0]) for i in align_df.index])
+            max_row_length = maxRowLength(align_df)
         score_numcolumns = scoreNumColumns(align_df)
     else:
         score_numcolumns = 0
