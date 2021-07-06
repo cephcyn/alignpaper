@@ -459,13 +459,13 @@ class App extends React.Component {
     this.handleParamScoreComponentsChange = this.handleParamScoreComponentsChange.bind(this);
     this.handleParamMoveDistribChange = this.handleParamMoveDistribChange.bind(this);
     this.handleParamSearchCutoffChange = this.handleParamSearchCutoffChange.bind(this);
+    this.paramReset = this.paramReset.bind(this);
     this.alignRawText = this.alignRawText.bind(this);
     this.updateAlignmentProgress = this.updateAlignmentProgress.bind(this);
     this.alignmentScore = this.alignmentScore.bind(this);
     this.alignmentSearchButton = this.alignmentSearchButton.bind(this);
     this.alignmentSearch = this.alignmentSearch.bind(this);
     this.updateSearchProgress = this.updateSearchProgress.bind(this);
-    this.buttonDoesNothing = this.buttonDoesNothing.bind(this);
     this.alignDataSave = this.alignDataSave.bind(this);
     this.alignDataLoadClick = this.alignDataLoadClick.bind(this);
     this.alignDataLoad = this.alignDataLoad.bind(this);
@@ -559,6 +559,12 @@ class App extends React.Component {
 
   handleParamSearchCutoffChange(e) {
     this.setState({ param_search_cutoff: e.target.value });
+  }
+
+  paramReset(e) {
+    this.setState({ param_score_components: JSON.parse(JSON.stringify(this.state.param_score_components_default)) });
+    this.setState({ param_move_distrib: JSON.parse(JSON.stringify(this.state.param_move_distrib_default)) });
+    this.setState({ param_search_cutoff: JSON.parse(JSON.stringify(this.state.param_search_cutoff_default)) });
   }
 
   alignRawText(e) {
@@ -728,11 +734,6 @@ class App extends React.Component {
       });
   }
 
-  buttonDoesNothing(e) {
-    e.preventDefault();
-    console.log("nothing button clicked!");
-  }
-
   alignDataSave(e) {
     e.preventDefault();
     console.log("save button clicked!");
@@ -741,7 +742,7 @@ class App extends React.Component {
       alignment_cols_locked: this.state.alignment_cols_locked,
       alignment_max_row_length: this.state.alignment_max_row_length,
       alignment_score: this.state.alignment_score,
-      alignment_score_components: this.state_alignment_score_components,
+      alignment_score_components: this.state.alignment_score_components,
       parse_constituency: this.state.parse_constituency,
     });
     const blob = new Blob([output]);
@@ -777,7 +778,7 @@ class App extends React.Component {
       this.historyReset({
         alignment: fileContentsParse.alignment,
         alignment_cols_locked: fileContentsParse.alignment_cols_locked,
-        alignment_max_row_length: fileContentsParse.state.alignment_max_row_length,
+        alignment_max_row_length: fileContentsParse.alignment_max_row_length,
         alignment_score: fileContentsParse.alignment_score,
         alignment_score_components: fileContentsParse.alignment_score_components
       });
@@ -818,7 +819,7 @@ class App extends React.Component {
     console.log("attempting to append to history!");
     // first check if an append actually should be done
     // e.g. if a shift makes no change to the alignment at all, there should be no step added to history
-    // TODO implement the check
+    // TODO implement the check???
     if (false) {
       // we don't need to do an append...
       console.log("found that no append was necessary!");
@@ -1029,8 +1030,6 @@ class App extends React.Component {
             onChange={e => this.alignDataLoad(e)}
             ref={e=>this.dofileUpload = e}
           />
-        <button onClick={this.buttonDoesNothing}>This Button Does Nothing</button>
-        <br />
         <br />
         <hr />
         {aligntable}
@@ -1048,11 +1047,11 @@ class App extends React.Component {
               {scorecomponenttable}
               {movedistribtable}
               {searchcutofftable}
+              <br />
+              <button onClick={this.paramReset}>Reset hyperparameters to default</button>
             </td>
           </tr></tbody>
         </table>
-        <hr />
-        <img src={logo} className="App-logo" alt="logo" />
       </div>
     );
   }

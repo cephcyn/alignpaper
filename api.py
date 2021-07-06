@@ -735,12 +735,12 @@ def task_alignsearch(
     ] + operation_history
     # clean up operation_history to have step numbers
     operation_history = [
-        f'({i}/{len(operation_history)-1}): {operation_history[i]}'
+        f'({i}/{len(operation_history)-1}/{arg_greedysteps}): {operation_history[i]}'
         for i in range(len(operation_history))
     ]
     # add note on which step we hit the optimal state at
     operation_history = operation_history + [
-        f'Optimal state selected at step {optimal_step_i}'
+        f'Optimal state selected at step {optimal_step_i+1}'
     ]
     return {
         'status': '\n'.join(operation_history),
