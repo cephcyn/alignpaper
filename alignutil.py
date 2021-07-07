@@ -876,21 +876,17 @@ def maxRowLength(align_df):
 
 # calculate an alignment overall score
 # TODO-REFERENCE originally from alignment.ipynb
-def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, max_row_length=None, term_weight_func=None, weight_components=None):
+def scoreAlignment(align_df, spacy_model, scispacy_model, scispacy_linker, embed_model, term_weight_func=None, weight_components=None):
     # set default score weights...
     if weight_components is None:
         print('scoreAlignment: using default weight_components')
         weight_components = np.array([0.2, 0.2, 1, 0, 0, 0])
+    # calculate the max_row_length field...
+    max_row_length = maxRowLength(align_df)
 
     # GET SCORE COMPONENTS
     # calculate score_numcolumns subscore
     if not weight_components[0]==0 or True:
-        # ideally, only calculate the max row length once for each optimization search, but we can do that per-alignment if it's not provided
-        if max_row_length is None:
-            print('scoreAlignment: self-generating max_row_length')
-            # traceback.print_stack(limit=5)
-            # set max_row_length to max(number of cells occupied with text) over all rows in align_df
-            max_row_length = maxRowLength(align_df)
         score_numcolumns = scoreNumColumns(align_df)
     else:
         score_numcolumns = 0

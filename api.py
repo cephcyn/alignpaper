@@ -140,9 +140,6 @@ def task_textalign(self, arg_input, arg_score_components):
                 'status': f'Currently aligning... progress ({rows_aligned}/{rows_total})'
             }
         )
-    # compute max_row_length to be used for this set of texts
-    max_row_length = alignutil.maxRowLength(align_df)
-    output['alignment_max_row_length'] = max_row_length
     # convert the final alignment output to an outputtable format
     output['alignment'] = alignutil.alignment_to_jsondict(align_df)['alignment']
     # get alignment score
@@ -152,7 +149,6 @@ def task_textalign(self, arg_input, arg_score_components):
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=max_row_length,
         weight_components=arg_score_components,
     )
     output['alignment_score'] = singlescore
@@ -183,8 +179,6 @@ def taskstatus_textalign(task_id):
             response['parse_constituency'] = task.info['parse_constituency']
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
-        if 'alignment_max_row_length' in task.info:
-            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
         if 'alignment_score' in task.info:
             response['alignment_score'] = task.info['alignment_score']
         if 'alignment_score_components' in task.info:
@@ -257,7 +251,6 @@ def api_alignop_shift():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_row = int(request_args['row'])
         arg_col = int(request_args['col'])
         arg_shiftdist = int(request_args['shift_dist'])
@@ -289,10 +282,8 @@ def api_alignop_shift():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components,
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -305,7 +296,6 @@ def api_alignop_insertcol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_insertafter = request_args['insertafter']
         arg_score_components = [float(e) for e in request_args['param_score_components']]
@@ -329,10 +319,8 @@ def api_alignop_insertcol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components,
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -346,7 +334,6 @@ def api_alignop_deletecol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
@@ -368,10 +355,8 @@ def api_alignop_deletecol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -384,7 +369,6 @@ def api_alignop_mergecol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
@@ -406,10 +390,8 @@ def api_alignop_mergecol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -422,7 +404,6 @@ def api_alignop_splitsinglecol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_right_align = bool(request_args['right_align'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
@@ -446,10 +427,8 @@ def api_alignop_splitsinglecol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -462,7 +441,6 @@ def api_alignop_splittriecol():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_col = int(request_args['col'])
         arg_right_align = bool(request_args['right_align'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
@@ -486,10 +464,8 @@ def api_alignop_splittriecol():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
-    output['alignment_max_row_length'] = alignutil.maxRowLength(align_df)
     output['alignment_score'] = singlescore
     output['alignment_score_components'] = list(components)
     return jsonify(output)
@@ -502,7 +478,6 @@ def api_alignscore():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_score_components = [float(e) for e in request_args['param_score_components']]
     except:
         print(traceback.format_exc())
@@ -517,7 +492,6 @@ def api_alignscore():
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=arg_max_row_length,
         weight_components=arg_score_components
     )
     output = {}
@@ -530,7 +504,6 @@ def api_alignscore():
 def task_alignsearch(
         self,
         arg_alignment,
-        arg_max_row_length,
         arg_alignment_cols_locked,
         arg_greedysteps,
         arg_score_components,
@@ -542,7 +515,6 @@ def task_alignsearch(
     scispacy_model = scisp
     scispacy_linker = linker
     embed_model = fasttext
-    max_row_length = arg_max_row_length
     term_weight_func = None
     weight_components = None
     move_distrib = arg_move_distrib
@@ -567,7 +539,6 @@ def task_alignsearch(
         scispacy_model=scisp,
         scispacy_linker=linker,
         embed_model=fasttext,
-        max_row_length=max_row_length,
         weight_components=arg_score_components,
     )
     optimal_score = initial_singlescore
@@ -631,7 +602,7 @@ def task_alignsearch(
         # initialize the progress variables
         states_calculated = 0
         states_total = len(valid_operations)
-        print(valid_operations)
+        print(f'step {step_number}: operations {valid_operations}')
         self.update_state(
             state='PROGRESS',
             meta={
@@ -664,9 +635,10 @@ def task_alignsearch(
                 spacy_model=spacy_model,
                 scispacy_model=scispacy_model, scispacy_linker=scispacy_linker,
                 embed_model=embed_model,
-                max_row_length=max_row_length,
                 weight_components=arg_score_components,
             )
+            # debug printing...
+            print(f'{selected_operation}: {singlescore}\n{rawscores.to_string()}')
             candidates.append((operated, singlescore, selected_operation, components))
             states_calculated += 1
             self.update_state(
@@ -679,8 +651,8 @@ def task_alignsearch(
             )
         # sort the result candidates by score, descending
         candidates.sort(key=lambda x: -1 * x[1])
-        # keep track of how many times in a row the best option has been 'No move'
-        if candidates[0][2][0]=='none':
+        # keep track of how many times in a row the best (or only) option has been 'No move'
+        if (len(candidates) < 2) or (candidates[0][2][0]=='none'):
             none_optimal_n += 1
         else:
             none_optimal_n = 0
@@ -696,7 +668,6 @@ def task_alignsearch(
                 # randomwalk isn't allowed to take 'None' move :P
                 selected = random.randint(0, len(candidates)-1)
                 step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
-        print(f'{move} step chose {step_operation} with score {step_score}')
         # check if this step is the new optimal step; save it if it is
         if step_score > optimal_score:
             optimal_score = step_score
@@ -735,17 +706,20 @@ def task_alignsearch(
     ] + operation_history
     # clean up operation_history to have step numbers
     operation_history = [
-        f'({i}/{len(operation_history)-1}/{arg_greedysteps}): {operation_history[i]}'
+        f'({i}/{len(operation_history)-1}): {operation_history[i]}'
         for i in range(len(operation_history))
     ]
+    # add note on how many total steps we attempted
+    operation_history = [
+        f'Performed search capped at {arg_greedysteps} steps'
+    ] + operation_history
     # add note on which step we hit the optimal state at
     operation_history = operation_history + [
-        f'Optimal state selected at step {optimal_step_i+1}'
+        f'Optimal state selected at step {optimal_step_i}'
     ]
     return {
         'status': '\n'.join(operation_history),
         'alignment': alignutil.alignment_to_jsondict(optimal_df)['alignment'],
-        'alignment_max_row_length': alignutil.maxRowLength(align_df),
         'alignment_score': optimal_score,
         'alignment_score_components': list(optimal_scorecomponents)
     }
@@ -772,8 +746,6 @@ def taskstatus_alignsearch(task_id):
         }
         if 'alignment' in task.info:
             response['alignment'] = task.info['alignment']
-        if 'alignment_max_row_length' in task.info:
-            response['alignment_max_row_length'] = task.info['alignment_max_row_length']
         if 'alignment_score' in task.info:
             response['alignment_score'] = task.info['alignment_score']
         if 'alignment_score_components' in task.info:
@@ -797,7 +769,6 @@ def api_alignsearch():
     request_args = request.get_json()
     try:
         arg_alignment = {'alignment': json.loads(request_args['alignment'])}
-        arg_max_row_length = int(request_args['alignment_max_row_length'])
         arg_alignment_cols_locked = json.loads(request_args['alignment_cols_locked'])
         arg_greedysteps = int(json.loads(request_args['greedysteps']))
         arg_score_components = [float(e) for e in request_args['param_score_components']]
@@ -812,7 +783,6 @@ def api_alignsearch():
         }
     task = task_alignsearch.apply_async(kwargs={
         'arg_alignment':arg_alignment,
-        'arg_max_row_length':arg_max_row_length,
         'arg_alignment_cols_locked':arg_alignment_cols_locked,
         'arg_greedysteps':arg_greedysteps,
         'arg_score_components':arg_score_components,

@@ -1,6 +1,5 @@
 import React from 'react';
 
-import logo from './logo.svg';
 import './App.css';
 
 class ShiftButton extends React.Component {
@@ -18,7 +17,6 @@ class ShiftButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         row: this.props.rownum,
         col: this.props.colnum,
         shift_dist: this.props.direction,
@@ -70,7 +68,6 @@ class InsertButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         insertafter: true,
         param_score_components: this.props.param_score_components,
@@ -114,7 +111,6 @@ class DeleteButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         param_score_components: this.props.param_score_components,
       })
@@ -157,7 +153,6 @@ class MergeButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         param_score_components: this.props.param_score_components,
       })
@@ -200,7 +195,6 @@ class SplitSingleButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         right_align: this.props.right_align,
         param_score_components: this.props.param_score_components,
@@ -251,7 +245,6 @@ class SplitTrieButton extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.props.data),
-        alignment_max_row_length: this.props.max_row_length,
         col: this.props.colnum,
         right_align: this.props.right_align,
         param_score_components: this.props.param_score_components,
@@ -310,21 +303,18 @@ class AlignmentTable extends React.Component {
             <br/>
             <InsertButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
             />
             <DeleteButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
             />
             <MergeButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               param_score_components={this.props.param_score_components}
               onAlignmentChange={this.props.onAlignmentChange}
@@ -332,7 +322,6 @@ class AlignmentTable extends React.Component {
             <br/>
             <SplitSingleButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               right_align={false}
               param_score_components={this.props.param_score_components}
@@ -340,7 +329,6 @@ class AlignmentTable extends React.Component {
             />
             <SplitSingleButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               right_align={true}
               param_score_components={this.props.param_score_components}
@@ -349,7 +337,6 @@ class AlignmentTable extends React.Component {
             <br/>
             <SplitTrieButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               right_align={false}
               param_score_components={this.props.param_score_components}
@@ -357,7 +344,6 @@ class AlignmentTable extends React.Component {
             />
             <SplitTrieButton
               data={this.props.data}
-              max_row_length={this.props.max_row_length}
               colnum={index}
               right_align={true}
               param_score_components={this.props.param_score_components}
@@ -383,7 +369,6 @@ class AlignmentTable extends React.Component {
               <br/>
               <ShiftButton
                 data={this.props.data}
-                max_row_length={this.props.max_row_length}
                 rownum={row.id}
                 colnum={index}
                 direction={-1}
@@ -392,7 +377,6 @@ class AlignmentTable extends React.Component {
               />
               <ShiftButton
                 data={this.props.data}
-                max_row_length={this.props.max_row_length}
                 rownum={row.id}
                 colnum={index}
                 direction={1}
@@ -430,7 +414,6 @@ class App extends React.Component {
     this.state = {
       alignment: [],
       alignment_cols_locked: [],
-      alignment_max_row_length: null,
       alignment_score: null,
       alignment_score_components: null,
       param_score_components: [0.2, 0.2, 1, 0, 0, 0],
@@ -447,7 +430,6 @@ class App extends React.Component {
         // default empty values, this is ugly and redundant but I'm not going to streamline it
         alignment: [],
         alignment_cols_locked: [],
-        alignment_max_row_length: null,
         alignment_score: null,
         alignment_score_components: null,
       }],
@@ -492,12 +474,6 @@ class App extends React.Component {
     }
     // handle the alignment itself
     this.setState({ alignment: e.alignment });
-    // handle alignment_max_row_length
-    let updated_alignment_max_row_length = this.state.alignment_max_row_length;
-    if ('alignment_max_row_length' in e) {
-      updated_alignment_max_row_length = e.alignment_max_row_length;
-      this.setState({ alignment_score: updated_alignment_max_row_length });
-    }
     // handle alignment_score
     let updated_alignment_score = this.state.alignment_score;
     if ('alignment_score' in e) {
@@ -517,7 +493,6 @@ class App extends React.Component {
     this.historyAppend({
       alignment: e.alignment,
       alignment_cols_locked: updated_alignment_cols_locked,
-      alignment_max_row_length: updated_alignment_max_row_length,
       alignment_score: updated_alignment_score,
       alignment_score_components: updated_alignment_score_components
     });
@@ -534,7 +509,6 @@ class App extends React.Component {
       this.historyAppend({
         alignment: this.state.alignment,
         alignment_cols_locked: updated,
-        alignment_max_row_length: this.state.alignment_max_row_length,
         alignment_score: this.state.alignment_score,
         alignment_score_components: this.state.alignment_score_components
       });
@@ -607,7 +581,6 @@ class App extends React.Component {
               alignment_cols_locked: new Array(data['alignment'][0]['txt'].length).fill(false),
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
-              alignment_max_row_length: data['alignment_max_row_length'],
               parse_constituency: data['parse_constituency'],
               loading: false,
               textstatus: "",
@@ -641,7 +614,6 @@ class App extends React.Component {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
-        alignment_max_row_length: this.state.alignment_max_row_length,
         param_score_components: this.state.param_score_components,
       })
     };
@@ -670,7 +642,6 @@ class App extends React.Component {
       body: JSON.stringify({
         alignment: JSON.stringify(this.state.alignment),
         alignment_cols_locked: JSON.stringify(this.state.alignment_cols_locked),
-        alignment_max_row_length: this.state.alignment_max_row_length,
         greedysteps: JSON.stringify(numsteps),
         param_score_components: this.state.param_score_components,
         param_move_distrib: this.state.param_move_distrib,
@@ -701,7 +672,6 @@ class App extends React.Component {
             // success!
             this.setState({
               alignment: data['alignment'],
-              alignment_max_row_length: data['alignment_max_row_length'],
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
               loading: false,
@@ -712,7 +682,6 @@ class App extends React.Component {
             this.historyAppend({
               alignment: data['alignment'],
               alignment_cols_locked: this.state.alignment_cols_locked,
-              alignment_max_row_length: data['alignment_max_row_length'],
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components']
             });
@@ -740,7 +709,6 @@ class App extends React.Component {
     const output = JSON.stringify({
       alignment: this.state.alignment,
       alignment_cols_locked: this.state.alignment_cols_locked,
-      alignment_max_row_length: this.state.alignment_max_row_length,
       alignment_score: this.state.alignment_score,
       alignment_score_components: this.state.alignment_score_components,
       parse_constituency: this.state.parse_constituency,
@@ -778,7 +746,6 @@ class App extends React.Component {
       this.historyReset({
         alignment: fileContentsParse.alignment,
         alignment_cols_locked: fileContentsParse.alignment_cols_locked,
-        alignment_max_row_length: fileContentsParse.alignment_max_row_length,
         alignment_score: fileContentsParse.alignment_score,
         alignment_score_components: fileContentsParse.alignment_score_components
       });
@@ -795,7 +762,6 @@ class App extends React.Component {
     this.setState({
       alignment: this.state.history[this.state.history_current - 1].alignment,
       alignment_cols_locked: this.state.history[this.state.history_current - 1].alignment_cols_locked,
-      alignment_max_row_length: this.state.history[this.state.history_current - 1].alignment_max_row_length,
       alignment_score: this.state.history[this.state.history_current - 1].alignment_score,
       alignment_score_components: this.state.history[this.state.history_current - 1].alignment_score_components,
       history_current: this.state.history_current - 1
@@ -808,7 +774,6 @@ class App extends React.Component {
     this.setState({
       alignment: this.state.history[this.state.history_current + 1].alignment,
       alignment_cols_locked: this.state.history[this.state.history_current + 1].alignment_cols_locked,
-      alignment_max_row_length: this.state.history[this.state.history_current + 1].alignment_max_row_length,
       alignment_score: this.state.history[this.state.history_current + 1].alignment_score,
       alignment_score_components: this.state.history[this.state.history_current + 1].alignment_score_components,
       history_current: this.state.history_current + 1
@@ -854,7 +819,6 @@ class App extends React.Component {
         history: [{
           alignment: [],
           alignment_cols_locked: [],
-          alignment_max_row_length: null,
           alignment_score: null,
           alignment_score_components: null,
         }]
@@ -880,7 +844,6 @@ class App extends React.Component {
     if (this.state.alignment.length > 0) {
       aligntable = <AlignmentTable
         data={this.state.alignment}
-        max_row_length={this.state.alignment_max_row_length}
         param_score_components={this.state.param_score_components}
         dataLockCols={this.state.alignment_cols_locked}
         onAlignmentChange={this.handleAlignmentChange}
@@ -1041,7 +1004,6 @@ class App extends React.Component {
             <td>
               <p>overall alignment score = {this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
               <p>score components breakdown = {this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
-              <p>cells in longest row = {this.state.alignment_max_row_length ? this.state.alignment_max_row_length.toString() : 'Undefined'}</p>
             </td>
             <td>
               {scorecomponenttable}
