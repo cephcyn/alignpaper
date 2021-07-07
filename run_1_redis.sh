@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Credits for this script go to
+# Partial credits for this script go to
 # https://github.com/miguelgrinberg/flask-celery-example
+
+# cd back up to parent directory when leaving script
+trap "cd .." EXIT
 
 conda activate alignpaper
 
