@@ -289,6 +289,50 @@ def api_alignop_shift():
     return jsonify(output)
 
 
+@app.route('/api/alignop/squish', methods=['POST'])
+def api_alignop_squish():
+    print('... called /api/alignop/squish ...')
+    # retrieve arguments
+    request_args = request.get_json()
+    try:
+        arg_alignment = {'alignment': json.loads(request_args['alignment'])}
+        arg_row = int(request_args['row'])
+        arg_col = int(request_args['col'])
+        arg_shiftdist = int(request_args['shift_dist'])
+        arg_score_components = [float(e) for e in request_args['param_score_components']]
+    except:
+        print(traceback.format_exc())
+        return {
+            'error': 'improperly formatted or missing arguments',
+            'traceback': f'{traceback.format_exc()}'
+        }
+    align_df = alignutil.jsondict_to_alignment(arg_alignment)
+    try:
+        align_df = alignutil.squishCells(
+            align_df,
+            shift_row=arg_row,
+            shift_col=f'txt{arg_col}',
+            shift_direction=arg_shiftdist,
+        )
+    except:
+        # if shifting fails, just don't do it
+        print(traceback.format_exc())
+        pass
+    output = alignutil.alignment_to_jsondict(align_df)
+    # get alignment score
+    singlescore, components, rawscores = alignutil.scoreAlignment(
+        align_df,
+        spacy_model=sp,
+        scispacy_model=scisp,
+        scispacy_linker=linker,
+        embed_model=fasttext,
+        weight_components=arg_score_components,
+    )
+    output['alignment_score'] = singlescore
+    output['alignment_score_components'] = list(components)
+    return jsonify(output)
+
+
 @app.route('/api/alignop/insertcol', methods=['POST'])
 def api_alignop_insertcol():
     print('... called /api/alignop/insertcol ...')

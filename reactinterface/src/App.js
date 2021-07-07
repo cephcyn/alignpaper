@@ -53,6 +53,57 @@ class ShiftButton extends React.Component {
   }
 }
 
+class SquishButton extends React.Component {
+  constructor(props) {
+    super(props);
+    this.squishButton = this.squishButton.bind(this);
+  }
+
+  squishButton(e) {
+    e.preventDefault();
+    // console.log("Squish button clicked!");
+    // console.log(e);
+    const requestOptions = {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        alignment: JSON.stringify(this.props.data),
+        row: this.props.rownum,
+        col: this.props.colnum,
+        shift_dist: this.props.direction,
+        param_score_components: this.props.param_score_components,
+      })
+    };
+    fetch("/api/alignop/squish", requestOptions)
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        this.props.onAlignmentChange(data);
+      });
+  }
+
+  render() {
+    // console.log("rerendering SquishButton ..............");
+    // console.log("props:", this.props);
+    // console.log("state:", this.state);
+
+    let text;
+    if (this.props.direction === -1) {
+      text = "<+"; // &lt;
+    } else {
+      text = "+>"; // &gt;
+    }
+
+    return (
+      <button
+        className="tight"
+        onClick={this.squishButton}>
+          {text}
+      </button>)
+  }
+}
+
 class InsertButton extends React.Component {
   constructor(props) {
     super(props);
@@ -376,6 +427,23 @@ class AlignmentTable extends React.Component {
                 onAlignmentChange={this.props.onAlignmentChange}
               />
               <ShiftButton
+                data={this.props.data}
+                rownum={row.id}
+                colnum={index}
+                direction={1}
+                param_score_components={this.props.param_score_components}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
+              <br/>
+              <SquishButton
+                data={this.props.data}
+                rownum={row.id}
+                colnum={index}
+                direction={-1}
+                param_score_components={this.props.param_score_components}
+                onAlignmentChange={this.props.onAlignmentChange}
+              />
+              <SquishButton
                 data={this.props.data}
                 rownum={row.id}
                 colnum={index}

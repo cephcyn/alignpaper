@@ -501,7 +501,7 @@ def splitTrieColumn(src_alignment, split_col, right_align=False):
     # Now actually do the split operation
     tree = wordTree(src_alignment[split_col].map(lambda x: x[0]), right_align=right_align)
     tree = wordTreeCollapse(tree, right_align=right_align)
-    # squish that tree into only 2 levels because we only want to generate ONE new column max
+    # compress that tree into only 2 levels because we only want to generate ONE new column max
     tree = wordTreeCompress(tree, right_align=right_align)
     tree_depth = wordTreeDepth(tree)
     split_data = wordTreeSplit(tree, tree_depth, {}, right_align=right_align)
@@ -643,6 +643,28 @@ def shiftCells(src_alignment, shift_rows, shift_col, shift_distance, shift_size=
         for i in range(len(clipboard)):
             result.loc[shift_row][row_colindex_start+shift_distance+i] = clipboard[i]
     return result # removeEmptyColumns(result)
+
+
+# Squishes (merges) the specified single cell in an alignment with its neighbor
+# shift_direction=1 means shift to the right, shift_direction=-1 means shift to the left
+def squishCells(src_alignment, shift_row, shift_col, shift_direction, emptycell=('','',[])):
+    # initialize the alignment table copy we'll be working with
+    result = src_alignment.copy()
+    # get the index numbers we are working with
+    colindex_start = list(result.columns).index(shift_col)
+    # grab the source cell
+    source = result.loc[shift_row][colindex_start]
+    # replace old cell with empty tuple
+    result.loc[shift_row][colindex_start] = emptycell
+    # merge old content with destination content
+    dest = result.loc[shift_row][colindex_start+shift_direction]
+    # TODO implement phrase POS merging somehow
+    if shift_direction > 0:
+        merged = (source[0]+' '+dest[0], '', source[2]+dest[2])
+    else:
+        merged = (dest[0]+' '+source[0], '', dest[2]+source[2])
+    result.loc[shift_row][colindex_start+shift_direction] = merged
+    return result
 
 
 # Insert a column into an alignment relative (before or after) to the specified column
