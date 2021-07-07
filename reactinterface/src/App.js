@@ -469,6 +469,7 @@ class App extends React.Component {
       (e.alignment.length > 0)
       && (e.alignment[0]['txt'].length !== this.state.alignment[0]['txt'].length)
     ) {
+      // if we need to clear the column locking settings, e.g. if number of columns has changed
       updated_alignment_cols_locked = new Array(e.alignment[0]['txt'].length).fill(false);
       this.setState({ alignment_cols_locked: updated_alignment_cols_locked });
     }
@@ -666,32 +667,26 @@ class App extends React.Component {
         console.log('got update from server...');
         console.log(data);
         if (data['state'] !== 'PENDING' && data['state'] !== 'PROGRESS') {
+          // console.log('finished search!...');
+          // console.log(data);
+          this.setState({
+            loading: false,
+            textstatus: data['status'],
+          });
           if ('alignment' in data) {
-            console.log('finished search!...');
-            console.log(data);
             // success!
-            this.setState({
+            this.handleAlignmentChange({
               alignment: data['alignment'],
               alignment_score: data['alignment_score'],
               alignment_score_components: data['alignment_score_components'],
-              loading: false,
-              textstatus: data['status'],
-            });
-
-            // update history
-            this.historyAppend({
-              alignment: data['alignment'],
-              alignment_cols_locked: this.state.alignment_cols_locked,
-              alignment_score: data['alignment_score'],
-              alignment_score_components: data['alignment_score_components']
-            });
+            })
           } else {
             // failure?
-            this.setState({
+            this.handleAlignmentChange({
               alignment: [],
-              loading: false,
-              textstatus: data['status']
-            });
+              alignment_score: null,
+              alignment_score_components: null,
+            })
           }
         } else {
           // check back on the progress every so often...
