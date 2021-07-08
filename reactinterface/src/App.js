@@ -795,6 +795,7 @@ class App extends React.Component {
 
   alignDataLoad(e) {
     const fileObj = e.target.files[0];
+    const fileObjName = fileObj.name;
     const reader = new FileReader();
     let fileloaded = e => {
       // e.target.result is the file's content as text
@@ -802,7 +803,7 @@ class App extends React.Component {
       const fileContentsParse = JSON.parse(fileContents);
       this.setState(fileContentsParse);
       this.setState({
-        textstatus: 'Loaded alignment from save file',
+        textstatus: 'Loaded alignment from save file: '+fileObjName,
       });
 
       // set history purely to loaded contents when we load in from a saved alignment

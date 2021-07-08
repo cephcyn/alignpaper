@@ -708,7 +708,7 @@ def task_alignsearch(
         elif move == 'randomwalk':
             selected = random.randint(0, len(candidates)-1)
             step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
-            if step_operation=='None':
+            if step_operation=='none':
                 # randomwalk isn't allowed to take 'None' move :P
                 selected = random.randint(0, len(candidates)-1)
                 step_df, step_score, step_operation, step_scorecomponents = candidates[selected]
@@ -722,8 +722,8 @@ def task_alignsearch(
         status_text = f'{move} : '
         if (step_operation[0]=='shift') and (step_operation[3]!=0):
             status_text += f'Shifted {step_operation[4]} cell(s)'
-            status_text += f' starting from column {step_operation[2]}'
             status_text += f' in rows {step_operation[1]}'
+            status_text += f' starting from column {step_operation[2]}'
             status_text += f' by {(step_operation[3])} cell(s) to the right'
             # "0 cells to the right" would be no shift
             # negative value would be left shift
@@ -759,7 +759,7 @@ def task_alignsearch(
     ] + operation_history
     # add note on which step we hit the optimal state at
     operation_history = operation_history + [
-        f'Optimal state selected at step {optimal_step_i}'
+        f'Optimal state selected at step {optimal_step_i+1}'
     ]
     return {
         'status': '\n'.join(operation_history),
