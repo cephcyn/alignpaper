@@ -1,4 +1,4 @@
-name: alignpaper2
+name: alignpaper
 channels:
   - conda-forge
   - defaults
