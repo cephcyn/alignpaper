@@ -1035,14 +1035,14 @@ class App extends React.Component {
         />
         <br />
         <button onClick={this.alignRawText}>Align Texts</button>
+        &nbsp;&nbsp;
         <button onClick={this.alignmentScore}>Score</button>
-        <br />
-        <button onClick={e => this.alignmentSearchButton(e, 1)}>Search (1 step)</button>
-        <button onClick={e => this.alignmentSearchButton(e, 10)}>Search (up to 10 steps)</button>
-        <button onClick={e => this.alignmentSearchButton(e, 50)}>Search (up to 50 steps)</button>
-        <br />
+        &nbsp;&nbsp;
         <button onClick={this.historyUndo} disabled={!historyUndoLegal}>Undo</button>
         <button onClick={this.historyRedo} disabled={!historyRedoLegal}>Redo</button>
+        <br />
+        <button onClick={e => this.alignmentSearchButton(e, 5)}>Search (up to 5 steps)</button>
+        <button onClick={e => this.alignmentSearchButton(e, 20)}>Search (up to 20 steps)</button>
         <br />
         <button onClick={this.alignDataSave}>Save Alignment</button>
         <a className="hidden"
@@ -1059,25 +1059,18 @@ class App extends React.Component {
           />
         <br />
         <hr />
+        <p>overall alignment score = {this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
+        <p>score components breakdown = {this.state.alignment_score_components ? this.state.alignment_score_components.join('\t') : 'Undefined'}</p>
+        <hr />
         {aligntable}
         {loadingspinner}
         <p className="preservenewline">{this.state.textstatus}</p>
         <hr />
-        <table style={{width: "100%"}}>
-          <tbody><tr>
-            <td>
-              <p>overall alignment score = {this.state.alignment_score ? this.state.alignment_score.toString() : 'Undefined'}</p>
-              <p>score components breakdown = {this.state.alignment_score_components ? this.state.alignment_score_components.toString() : 'Undefined'}</p>
-            </td>
-            <td>
-              {scorecomponenttable}
-              {movedistribtable}
-              {searchcutofftable}
-              <br />
-              <button onClick={this.paramReset}>Reset hyperparameters to default</button>
-            </td>
-          </tr></tbody>
-        </table>
+        {scorecomponenttable}
+        {movedistribtable}
+        {searchcutofftable}
+        <br />
+        <button onClick={this.paramReset}>Reset hyperparameters to default</button>
       </div>
     );
   }
